@@ -1075,9 +1075,11 @@ static void stratum_gen_work(struct stratum_ctx *sctx, struct work *work)
 		work->data[9 + i] = be32dec((uint32_t *)merkle_root + i);
 	work->data[17] = le32dec(sctx->job.ntime);
 	work->data[18] = le32dec(sctx->job.nbits);
-	work->data[20] = *sctx->job.nedgebits;
-	work->data[21] = 0x80000000;
-	work->data[31] = 0x00000280;
+	// move one byte of edgebits to the end of the message
+	// followed by "1" bit
+	work->data[20] = (*sctx->job.nedgebits << 23) & (1 << 22);
+	// lenth of the message in bits
+	work->data[31] = 0x00000281;
 
 	pthread_mutex_unlock(&sctx->work_lock);
 
