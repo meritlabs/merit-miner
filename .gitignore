@@ -2,6 +2,7 @@
 minerd
 minerd.exe
 *.o
+*.orig
 
 autom4te.cache
 .deps

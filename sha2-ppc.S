@@ -138,77 +138,9 @@ T.sha256_k:
 #endif
 
 
-.macro sha256_extend_doubleround i, rw, wo, ra, rb, ry, rz
-	lwz	r14, \wo+(\i+1)*4(\rw)
-	rotrwi	r12, \ry, 17
-	rotrwi	r13, \ry, 19
-	add	r11, r11, \ra
-	xor	r12, r12, r13
-	srwi	r13, \ry, 10
-	rotrwi	\ra, r14, 7
-	xor	r12, r12, r13
-	rotrwi	r13, r14, 18
-	add	r12, r12, r11
-	xor	\ra, \ra, r13
-	srwi	r13, r14, 3
-	lwz	r11, \wo+(\i+2)*4(\rw)
-	xor	\ra, \ra, r13
-	rotrwi	r13, \rz, 19
-	add	\ra, \ra, r12
-
-	rotrwi	r12, \rz, 17
-	add	r14, r14, \rb
-	xor	r12, r12, r13
-	srwi	r13, \rz, 10
-	rotrwi	\rb, r11, 7
-	xor	r12, r12, r13
-	rotrwi	r13, r11, 18
-	stw	\ra, \wo+(\i+16)*4(\rw)
-	xor	\rb, \rb, r13
-	srwi	r13, r11, 3
-	add	r14, r14, r12
-	xor	\rb, \rb, r13
-	add	\rb, \rb, r14
-	stw	\rb, \wo+(\i+17)*4(\rw)
-.endm
 
 
-.macro sha256_main_round i, rk, rw, wo, ra, rb, rc, rd, re, rf, rg, rh
-	lwz	r12, \wo+(\i)*4(\rw)
-	and	r13, \rf, \re
-	andc	r14, \rg, \re
-	lwz	r15, (\i)*4(\rk)
-	or	r14, r14, r13
-	rotrwi	r13, \re, 5
-	add	\rh, \rh, r14
-	xor	r14, \re, r13
-	rotrwi	r13, \re, 19
-	add	\rh, \rh, r12
-	xor	r14, r14, r13
-	add	\rh, \rh, r15
-	rotrwi	r13, r14, 6
-	xor	r15, \ra, \rb
-	add	\rh, \rh, r13
 
-	rotrwi	r13, \ra, 11
-	and	r15, r15, \rc
-	xor	r12, \ra, r13
-	rotrwi	r13, \ra, 20
-	and	r14, \ra, \rb
-	xor	r12, r12, r13
-	xor	r14, r14, r15
-	rotrwi	r13, r12, 2
-	add	r15, \rh, r14
-	add	\rh, \rh, \rd
-	add	\rd, r15, r13
-.endm
-
-.macro sha256_main_quadround i, rk, rw, wo
-	sha256_main_round \i+0, \rk, \rw, \wo, r4, r5, r6, r7, r8, r9, r10, r11
-	sha256_main_round \i+1, \rk, \rw, \wo, r7, r4, r5, r6, r11, r8, r9, r10
-	sha256_main_round \i+2, \rk, \rw, \wo, r6, r7, r4, r5, r10, r11, r8, r9
-	sha256_main_round \i+3, \rk, \rw, \wo, r5, r6, r7, r4, r9, r10, r11, r8
-.endm
 
 
 #ifdef _AIX
@@ -312,30 +244,750 @@ sha256_transform_swap:
 	stw	r10, 8*4+15*4(r1)
 	
 sha256_transform_extend:
-	sha256_extend_doubleround  0, r1, 8*4, r4, r5, r9, r10
-	sha256_extend_doubleround  2, r1, 8*4, r6, r7, r4, r5
-	sha256_extend_doubleround  4, r1, 8*4, r8, r9, r6, r7
-	sha256_extend_doubleround  6, r1, 8*4, r10, r4, r8, r9
-	sha256_extend_doubleround  8, r1, 8*4, r5, r6, r10, r4
-	sha256_extend_doubleround 10, r1, 8*4, r7, r8, r5, r6
-	sha256_extend_doubleround 12, r1, 8*4, r9, r10, r7, r8
-	sha256_extend_doubleround 14, r1, 8*4, r4, r5, r9, r10
-	sha256_extend_doubleround 16, r1, 8*4, r6, r7, r4, r5
-	sha256_extend_doubleround 18, r1, 8*4, r8, r9, r6, r7
-	sha256_extend_doubleround 20, r1, 8*4, r10, r4, r8, r9
-	sha256_extend_doubleround 22, r1, 8*4, r5, r6, r10, r4
-	sha256_extend_doubleround 24, r1, 8*4, r7, r8, r5, r6
-	sha256_extend_doubleround 26, r1, 8*4, r9, r10, r7, r8
-	sha256_extend_doubleround 28, r1, 8*4, r4, r5, r9, r10
-	sha256_extend_doubleround 30, r1, 8*4, r6, r7, r4, r5
-	sha256_extend_doubleround 32, r1, 8*4, r8, r9, r6, r7
-	sha256_extend_doubleround 34, r1, 8*4, r10, r4, r8, r9
-	sha256_extend_doubleround 36, r1, 8*4, r5, r6, r10, r4
-	sha256_extend_doubleround 38, r1, 8*4, r7, r8, r5, r6
-	sha256_extend_doubleround 40, r1, 8*4, r9, r10, r7, r8
-	sha256_extend_doubleround 42, r1, 8*4, r4, r5, r9, r10
-	sha256_extend_doubleround 44, r1, 8*4, r6, r7, r4, r5
-	sha256_extend_doubleround 46, r1, 8*4, r8, r9, r6, r7
+	lwz	r14, 8*4+(0+1)*4(r1)
+	rotrwi	r12, r9, 17
+	rotrwi	r13, r9, 19
+	add	r11, r11, r4
+	xor	r12, r12, r13
+	srwi	r13, r9, 10
+	rotrwi	r4, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r4, r4, r13
+	srwi	r13, r14, 3
+	lwz	r11, 8*4+(0+2)*4(r1)
+	xor	r4, r4, r13
+	rotrwi	r13, r10, 19
+	add	r4, r4, r12
+
+	rotrwi	r12, r10, 17
+	add	r14, r14, r5
+	xor	r12, r12, r13
+	srwi	r13, r10, 10
+	rotrwi	r5, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r4, 8*4+(0+16)*4(r1)
+	xor	r5, r5, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r5, r5, r13
+	add	r5, r5, r14
+	stw	r5, 8*4+(0+17)*4(r1)
+	lwz	r14, 8*4+(2+1)*4(r1)
+	rotrwi	r12, r4, 17
+	rotrwi	r13, r4, 19
+	add	r11, r11, r6
+	xor	r12, r12, r13
+	srwi	r13, r4, 10
+	rotrwi	r6, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r6, r6, r13
+	srwi	r13, r14, 3
+	lwz	r11, 8*4+(2+2)*4(r1)
+	xor	r6, r6, r13
+	rotrwi	r13, r5, 19
+	add	r6, r6, r12
+
+	rotrwi	r12, r5, 17
+	add	r14, r14, r7
+	xor	r12, r12, r13
+	srwi	r13, r5, 10
+	rotrwi	r7, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r6, 8*4+(2+16)*4(r1)
+	xor	r7, r7, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r7, r7, r13
+	add	r7, r7, r14
+	stw	r7, 8*4+(2+17)*4(r1)
+	lwz	r14, 8*4+(4+1)*4(r1)
+	rotrwi	r12, r6, 17
+	rotrwi	r13, r6, 19
+	add	r11, r11, r8
+	xor	r12, r12, r13
+	srwi	r13, r6, 10
+	rotrwi	r8, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r8, r8, r13
+	srwi	r13, r14, 3
+	lwz	r11, 8*4+(4+2)*4(r1)
+	xor	r8, r8, r13
+	rotrwi	r13, r7, 19
+	add	r8, r8, r12
+
+	rotrwi	r12, r7, 17
+	add	r14, r14, r9
+	xor	r12, r12, r13
+	srwi	r13, r7, 10
+	rotrwi	r9, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r8, 8*4+(4+16)*4(r1)
+	xor	r9, r9, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r9, r9, r13
+	add	r9, r9, r14
+	stw	r9, 8*4+(4+17)*4(r1)
+	lwz	r14, 8*4+(6+1)*4(r1)
+	rotrwi	r12, r8, 17
+	rotrwi	r13, r8, 19
+	add	r11, r11, r10
+	xor	r12, r12, r13
+	srwi	r13, r8, 10
+	rotrwi	r10, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r10, r10, r13
+	srwi	r13, r14, 3
+	lwz	r11, 8*4+(6+2)*4(r1)
+	xor	r10, r10, r13
+	rotrwi	r13, r9, 19
+	add	r10, r10, r12
+
+	rotrwi	r12, r9, 17
+	add	r14, r14, r4
+	xor	r12, r12, r13
+	srwi	r13, r9, 10
+	rotrwi	r4, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r10, 8*4+(6+16)*4(r1)
+	xor	r4, r4, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r4, r4, r13
+	add	r4, r4, r14
+	stw	r4, 8*4+(6+17)*4(r1)
+	lwz	r14, 8*4+(8+1)*4(r1)
+	rotrwi	r12, r10, 17
+	rotrwi	r13, r10, 19
+	add	r11, r11, r5
+	xor	r12, r12, r13
+	srwi	r13, r10, 10
+	rotrwi	r5, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r5, r5, r13
+	srwi	r13, r14, 3
+	lwz	r11, 8*4+(8+2)*4(r1)
+	xor	r5, r5, r13
+	rotrwi	r13, r4, 19
+	add	r5, r5, r12
+
+	rotrwi	r12, r4, 17
+	add	r14, r14, r6
+	xor	r12, r12, r13
+	srwi	r13, r4, 10
+	rotrwi	r6, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r5, 8*4+(8+16)*4(r1)
+	xor	r6, r6, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r6, r6, r13
+	add	r6, r6, r14
+	stw	r6, 8*4+(8+17)*4(r1)
+	lwz	r14, 8*4+(10+1)*4(r1)
+	rotrwi	r12, r5, 17
+	rotrwi	r13, r5, 19
+	add	r11, r11, r7
+	xor	r12, r12, r13
+	srwi	r13, r5, 10
+	rotrwi	r7, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r7, r7, r13
+	srwi	r13, r14, 3
+	lwz	r11, 8*4+(10+2)*4(r1)
+	xor	r7, r7, r13
+	rotrwi	r13, r6, 19
+	add	r7, r7, r12
+
+	rotrwi	r12, r6, 17
+	add	r14, r14, r8
+	xor	r12, r12, r13
+	srwi	r13, r6, 10
+	rotrwi	r8, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r7, 8*4+(10+16)*4(r1)
+	xor	r8, r8, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r8, r8, r13
+	add	r8, r8, r14
+	stw	r8, 8*4+(10+17)*4(r1)
+	lwz	r14, 8*4+(12+1)*4(r1)
+	rotrwi	r12, r7, 17
+	rotrwi	r13, r7, 19
+	add	r11, r11, r9
+	xor	r12, r12, r13
+	srwi	r13, r7, 10
+	rotrwi	r9, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r9, r9, r13
+	srwi	r13, r14, 3
+	lwz	r11, 8*4+(12+2)*4(r1)
+	xor	r9, r9, r13
+	rotrwi	r13, r8, 19
+	add	r9, r9, r12
+
+	rotrwi	r12, r8, 17
+	add	r14, r14, r10
+	xor	r12, r12, r13
+	srwi	r13, r8, 10
+	rotrwi	r10, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r9, 8*4+(12+16)*4(r1)
+	xor	r10, r10, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r10, r10, r13
+	add	r10, r10, r14
+	stw	r10, 8*4+(12+17)*4(r1)
+	lwz	r14, 8*4+(14+1)*4(r1)
+	rotrwi	r12, r9, 17
+	rotrwi	r13, r9, 19
+	add	r11, r11, r4
+	xor	r12, r12, r13
+	srwi	r13, r9, 10
+	rotrwi	r4, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r4, r4, r13
+	srwi	r13, r14, 3
+	lwz	r11, 8*4+(14+2)*4(r1)
+	xor	r4, r4, r13
+	rotrwi	r13, r10, 19
+	add	r4, r4, r12
+
+	rotrwi	r12, r10, 17
+	add	r14, r14, r5
+	xor	r12, r12, r13
+	srwi	r13, r10, 10
+	rotrwi	r5, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r4, 8*4+(14+16)*4(r1)
+	xor	r5, r5, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r5, r5, r13
+	add	r5, r5, r14
+	stw	r5, 8*4+(14+17)*4(r1)
+	lwz	r14, 8*4+(16+1)*4(r1)
+	rotrwi	r12, r4, 17
+	rotrwi	r13, r4, 19
+	add	r11, r11, r6
+	xor	r12, r12, r13
+	srwi	r13, r4, 10
+	rotrwi	r6, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r6, r6, r13
+	srwi	r13, r14, 3
+	lwz	r11, 8*4+(16+2)*4(r1)
+	xor	r6, r6, r13
+	rotrwi	r13, r5, 19
+	add	r6, r6, r12
+
+	rotrwi	r12, r5, 17
+	add	r14, r14, r7
+	xor	r12, r12, r13
+	srwi	r13, r5, 10
+	rotrwi	r7, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r6, 8*4+(16+16)*4(r1)
+	xor	r7, r7, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r7, r7, r13
+	add	r7, r7, r14
+	stw	r7, 8*4+(16+17)*4(r1)
+	lwz	r14, 8*4+(18+1)*4(r1)
+	rotrwi	r12, r6, 17
+	rotrwi	r13, r6, 19
+	add	r11, r11, r8
+	xor	r12, r12, r13
+	srwi	r13, r6, 10
+	rotrwi	r8, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r8, r8, r13
+	srwi	r13, r14, 3
+	lwz	r11, 8*4+(18+2)*4(r1)
+	xor	r8, r8, r13
+	rotrwi	r13, r7, 19
+	add	r8, r8, r12
+
+	rotrwi	r12, r7, 17
+	add	r14, r14, r9
+	xor	r12, r12, r13
+	srwi	r13, r7, 10
+	rotrwi	r9, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r8, 8*4+(18+16)*4(r1)
+	xor	r9, r9, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r9, r9, r13
+	add	r9, r9, r14
+	stw	r9, 8*4+(18+17)*4(r1)
+	lwz	r14, 8*4+(20+1)*4(r1)
+	rotrwi	r12, r8, 17
+	rotrwi	r13, r8, 19
+	add	r11, r11, r10
+	xor	r12, r12, r13
+	srwi	r13, r8, 10
+	rotrwi	r10, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r10, r10, r13
+	srwi	r13, r14, 3
+	lwz	r11, 8*4+(20+2)*4(r1)
+	xor	r10, r10, r13
+	rotrwi	r13, r9, 19
+	add	r10, r10, r12
+
+	rotrwi	r12, r9, 17
+	add	r14, r14, r4
+	xor	r12, r12, r13
+	srwi	r13, r9, 10
+	rotrwi	r4, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r10, 8*4+(20+16)*4(r1)
+	xor	r4, r4, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r4, r4, r13
+	add	r4, r4, r14
+	stw	r4, 8*4+(20+17)*4(r1)
+	lwz	r14, 8*4+(22+1)*4(r1)
+	rotrwi	r12, r10, 17
+	rotrwi	r13, r10, 19
+	add	r11, r11, r5
+	xor	r12, r12, r13
+	srwi	r13, r10, 10
+	rotrwi	r5, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r5, r5, r13
+	srwi	r13, r14, 3
+	lwz	r11, 8*4+(22+2)*4(r1)
+	xor	r5, r5, r13
+	rotrwi	r13, r4, 19
+	add	r5, r5, r12
+
+	rotrwi	r12, r4, 17
+	add	r14, r14, r6
+	xor	r12, r12, r13
+	srwi	r13, r4, 10
+	rotrwi	r6, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r5, 8*4+(22+16)*4(r1)
+	xor	r6, r6, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r6, r6, r13
+	add	r6, r6, r14
+	stw	r6, 8*4+(22+17)*4(r1)
+	lwz	r14, 8*4+(24+1)*4(r1)
+	rotrwi	r12, r5, 17
+	rotrwi	r13, r5, 19
+	add	r11, r11, r7
+	xor	r12, r12, r13
+	srwi	r13, r5, 10
+	rotrwi	r7, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r7, r7, r13
+	srwi	r13, r14, 3
+	lwz	r11, 8*4+(24+2)*4(r1)
+	xor	r7, r7, r13
+	rotrwi	r13, r6, 19
+	add	r7, r7, r12
+
+	rotrwi	r12, r6, 17
+	add	r14, r14, r8
+	xor	r12, r12, r13
+	srwi	r13, r6, 10
+	rotrwi	r8, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r7, 8*4+(24+16)*4(r1)
+	xor	r8, r8, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r8, r8, r13
+	add	r8, r8, r14
+	stw	r8, 8*4+(24+17)*4(r1)
+	lwz	r14, 8*4+(26+1)*4(r1)
+	rotrwi	r12, r7, 17
+	rotrwi	r13, r7, 19
+	add	r11, r11, r9
+	xor	r12, r12, r13
+	srwi	r13, r7, 10
+	rotrwi	r9, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r9, r9, r13
+	srwi	r13, r14, 3
+	lwz	r11, 8*4+(26+2)*4(r1)
+	xor	r9, r9, r13
+	rotrwi	r13, r8, 19
+	add	r9, r9, r12
+
+	rotrwi	r12, r8, 17
+	add	r14, r14, r10
+	xor	r12, r12, r13
+	srwi	r13, r8, 10
+	rotrwi	r10, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r9, 8*4+(26+16)*4(r1)
+	xor	r10, r10, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r10, r10, r13
+	add	r10, r10, r14
+	stw	r10, 8*4+(26+17)*4(r1)
+	lwz	r14, 8*4+(28+1)*4(r1)
+	rotrwi	r12, r9, 17
+	rotrwi	r13, r9, 19
+	add	r11, r11, r4
+	xor	r12, r12, r13
+	srwi	r13, r9, 10
+	rotrwi	r4, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r4, r4, r13
+	srwi	r13, r14, 3
+	lwz	r11, 8*4+(28+2)*4(r1)
+	xor	r4, r4, r13
+	rotrwi	r13, r10, 19
+	add	r4, r4, r12
+
+	rotrwi	r12, r10, 17
+	add	r14, r14, r5
+	xor	r12, r12, r13
+	srwi	r13, r10, 10
+	rotrwi	r5, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r4, 8*4+(28+16)*4(r1)
+	xor	r5, r5, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r5, r5, r13
+	add	r5, r5, r14
+	stw	r5, 8*4+(28+17)*4(r1)
+	lwz	r14, 8*4+(30+1)*4(r1)
+	rotrwi	r12, r4, 17
+	rotrwi	r13, r4, 19
+	add	r11, r11, r6
+	xor	r12, r12, r13
+	srwi	r13, r4, 10
+	rotrwi	r6, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r6, r6, r13
+	srwi	r13, r14, 3
+	lwz	r11, 8*4+(30+2)*4(r1)
+	xor	r6, r6, r13
+	rotrwi	r13, r5, 19
+	add	r6, r6, r12
+
+	rotrwi	r12, r5, 17
+	add	r14, r14, r7
+	xor	r12, r12, r13
+	srwi	r13, r5, 10
+	rotrwi	r7, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r6, 8*4+(30+16)*4(r1)
+	xor	r7, r7, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r7, r7, r13
+	add	r7, r7, r14
+	stw	r7, 8*4+(30+17)*4(r1)
+	lwz	r14, 8*4+(32+1)*4(r1)
+	rotrwi	r12, r6, 17
+	rotrwi	r13, r6, 19
+	add	r11, r11, r8
+	xor	r12, r12, r13
+	srwi	r13, r6, 10
+	rotrwi	r8, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r8, r8, r13
+	srwi	r13, r14, 3
+	lwz	r11, 8*4+(32+2)*4(r1)
+	xor	r8, r8, r13
+	rotrwi	r13, r7, 19
+	add	r8, r8, r12
+
+	rotrwi	r12, r7, 17
+	add	r14, r14, r9
+	xor	r12, r12, r13
+	srwi	r13, r7, 10
+	rotrwi	r9, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r8, 8*4+(32+16)*4(r1)
+	xor	r9, r9, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r9, r9, r13
+	add	r9, r9, r14
+	stw	r9, 8*4+(32+17)*4(r1)
+	lwz	r14, 8*4+(34+1)*4(r1)
+	rotrwi	r12, r8, 17
+	rotrwi	r13, r8, 19
+	add	r11, r11, r10
+	xor	r12, r12, r13
+	srwi	r13, r8, 10
+	rotrwi	r10, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r10, r10, r13
+	srwi	r13, r14, 3
+	lwz	r11, 8*4+(34+2)*4(r1)
+	xor	r10, r10, r13
+	rotrwi	r13, r9, 19
+	add	r10, r10, r12
+
+	rotrwi	r12, r9, 17
+	add	r14, r14, r4
+	xor	r12, r12, r13
+	srwi	r13, r9, 10
+	rotrwi	r4, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r10, 8*4+(34+16)*4(r1)
+	xor	r4, r4, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r4, r4, r13
+	add	r4, r4, r14
+	stw	r4, 8*4+(34+17)*4(r1)
+	lwz	r14, 8*4+(36+1)*4(r1)
+	rotrwi	r12, r10, 17
+	rotrwi	r13, r10, 19
+	add	r11, r11, r5
+	xor	r12, r12, r13
+	srwi	r13, r10, 10
+	rotrwi	r5, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r5, r5, r13
+	srwi	r13, r14, 3
+	lwz	r11, 8*4+(36+2)*4(r1)
+	xor	r5, r5, r13
+	rotrwi	r13, r4, 19
+	add	r5, r5, r12
+
+	rotrwi	r12, r4, 17
+	add	r14, r14, r6
+	xor	r12, r12, r13
+	srwi	r13, r4, 10
+	rotrwi	r6, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r5, 8*4+(36+16)*4(r1)
+	xor	r6, r6, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r6, r6, r13
+	add	r6, r6, r14
+	stw	r6, 8*4+(36+17)*4(r1)
+	lwz	r14, 8*4+(38+1)*4(r1)
+	rotrwi	r12, r5, 17
+	rotrwi	r13, r5, 19
+	add	r11, r11, r7
+	xor	r12, r12, r13
+	srwi	r13, r5, 10
+	rotrwi	r7, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r7, r7, r13
+	srwi	r13, r14, 3
+	lwz	r11, 8*4+(38+2)*4(r1)
+	xor	r7, r7, r13
+	rotrwi	r13, r6, 19
+	add	r7, r7, r12
+
+	rotrwi	r12, r6, 17
+	add	r14, r14, r8
+	xor	r12, r12, r13
+	srwi	r13, r6, 10
+	rotrwi	r8, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r7, 8*4+(38+16)*4(r1)
+	xor	r8, r8, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r8, r8, r13
+	add	r8, r8, r14
+	stw	r8, 8*4+(38+17)*4(r1)
+	lwz	r14, 8*4+(40+1)*4(r1)
+	rotrwi	r12, r7, 17
+	rotrwi	r13, r7, 19
+	add	r11, r11, r9
+	xor	r12, r12, r13
+	srwi	r13, r7, 10
+	rotrwi	r9, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r9, r9, r13
+	srwi	r13, r14, 3
+	lwz	r11, 8*4+(40+2)*4(r1)
+	xor	r9, r9, r13
+	rotrwi	r13, r8, 19
+	add	r9, r9, r12
+
+	rotrwi	r12, r8, 17
+	add	r14, r14, r10
+	xor	r12, r12, r13
+	srwi	r13, r8, 10
+	rotrwi	r10, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r9, 8*4+(40+16)*4(r1)
+	xor	r10, r10, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r10, r10, r13
+	add	r10, r10, r14
+	stw	r10, 8*4+(40+17)*4(r1)
+	lwz	r14, 8*4+(42+1)*4(r1)
+	rotrwi	r12, r9, 17
+	rotrwi	r13, r9, 19
+	add	r11, r11, r4
+	xor	r12, r12, r13
+	srwi	r13, r9, 10
+	rotrwi	r4, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r4, r4, r13
+	srwi	r13, r14, 3
+	lwz	r11, 8*4+(42+2)*4(r1)
+	xor	r4, r4, r13
+	rotrwi	r13, r10, 19
+	add	r4, r4, r12
+
+	rotrwi	r12, r10, 17
+	add	r14, r14, r5
+	xor	r12, r12, r13
+	srwi	r13, r10, 10
+	rotrwi	r5, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r4, 8*4+(42+16)*4(r1)
+	xor	r5, r5, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r5, r5, r13
+	add	r5, r5, r14
+	stw	r5, 8*4+(42+17)*4(r1)
+	lwz	r14, 8*4+(44+1)*4(r1)
+	rotrwi	r12, r4, 17
+	rotrwi	r13, r4, 19
+	add	r11, r11, r6
+	xor	r12, r12, r13
+	srwi	r13, r4, 10
+	rotrwi	r6, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r6, r6, r13
+	srwi	r13, r14, 3
+	lwz	r11, 8*4+(44+2)*4(r1)
+	xor	r6, r6, r13
+	rotrwi	r13, r5, 19
+	add	r6, r6, r12
+
+	rotrwi	r12, r5, 17
+	add	r14, r14, r7
+	xor	r12, r12, r13
+	srwi	r13, r5, 10
+	rotrwi	r7, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r6, 8*4+(44+16)*4(r1)
+	xor	r7, r7, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r7, r7, r13
+	add	r7, r7, r14
+	stw	r7, 8*4+(44+17)*4(r1)
+	lwz	r14, 8*4+(46+1)*4(r1)
+	rotrwi	r12, r6, 17
+	rotrwi	r13, r6, 19
+	add	r11, r11, r8
+	xor	r12, r12, r13
+	srwi	r13, r6, 10
+	rotrwi	r8, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r8, r8, r13
+	srwi	r13, r14, 3
+	lwz	r11, 8*4+(46+2)*4(r1)
+	xor	r8, r8, r13
+	rotrwi	r13, r7, 19
+	add	r8, r8, r12
+
+	rotrwi	r12, r7, 17
+	add	r14, r14, r9
+	xor	r12, r12, r13
+	srwi	r13, r7, 10
+	rotrwi	r9, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r8, 8*4+(46+16)*4(r1)
+	xor	r9, r9, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r9, r9, r13
+	add	r9, r9, r14
+	stw	r9, 8*4+(46+17)*4(r1)
 	
 	lwz	r4, 0*4(r3)
 	lwz	r5, 1*4(r3)
@@ -351,22 +1003,1734 @@ sha256_transform_extend:
 	lis	r16, HI(sha256_k)
 	addi	r16, r16, LO(sha256_k)
 #endif
-	sha256_main_quadround  0, r16, r1, 8*4
-	sha256_main_quadround  4, r16, r1, 8*4
-	sha256_main_quadround  8, r16, r1, 8*4
-	sha256_main_quadround 12, r16, r1, 8*4
-	sha256_main_quadround 16, r16, r1, 8*4
-	sha256_main_quadround 20, r16, r1, 8*4
-	sha256_main_quadround 24, r16, r1, 8*4
-	sha256_main_quadround 28, r16, r1, 8*4
-	sha256_main_quadround 32, r16, r1, 8*4
-	sha256_main_quadround 36, r16, r1, 8*4
-	sha256_main_quadround 40, r16, r1, 8*4
-	sha256_main_quadround 44, r16, r1, 8*4
-	sha256_main_quadround 48, r16, r1, 8*4
-	sha256_main_quadround 52, r16, r1, 8*4
-	sha256_main_quadround 56, r16, r1, 8*4
-	sha256_main_quadround 60, r16, r1, 8*4
+	lwz	r12, 8*4+(0+0)*4(r1)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (0+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 8*4+(0+1)*4(r1)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (0+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 8*4+(0+2)*4(r1)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (0+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 8*4+(0+3)*4(r1)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (0+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 8*4+(4+0)*4(r1)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (4+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 8*4+(4+1)*4(r1)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (4+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 8*4+(4+2)*4(r1)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (4+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 8*4+(4+3)*4(r1)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (4+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 8*4+(8+0)*4(r1)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (8+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 8*4+(8+1)*4(r1)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (8+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 8*4+(8+2)*4(r1)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (8+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 8*4+(8+3)*4(r1)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (8+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 8*4+(12+0)*4(r1)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (12+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 8*4+(12+1)*4(r1)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (12+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 8*4+(12+2)*4(r1)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (12+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 8*4+(12+3)*4(r1)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (12+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 8*4+(16+0)*4(r1)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (16+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 8*4+(16+1)*4(r1)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (16+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 8*4+(16+2)*4(r1)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (16+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 8*4+(16+3)*4(r1)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (16+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 8*4+(20+0)*4(r1)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (20+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 8*4+(20+1)*4(r1)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (20+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 8*4+(20+2)*4(r1)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (20+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 8*4+(20+3)*4(r1)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (20+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 8*4+(24+0)*4(r1)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (24+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 8*4+(24+1)*4(r1)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (24+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 8*4+(24+2)*4(r1)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (24+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 8*4+(24+3)*4(r1)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (24+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 8*4+(28+0)*4(r1)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (28+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 8*4+(28+1)*4(r1)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (28+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 8*4+(28+2)*4(r1)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (28+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 8*4+(28+3)*4(r1)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (28+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 8*4+(32+0)*4(r1)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (32+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 8*4+(32+1)*4(r1)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (32+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 8*4+(32+2)*4(r1)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (32+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 8*4+(32+3)*4(r1)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (32+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 8*4+(36+0)*4(r1)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (36+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 8*4+(36+1)*4(r1)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (36+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 8*4+(36+2)*4(r1)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (36+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 8*4+(36+3)*4(r1)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (36+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 8*4+(40+0)*4(r1)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (40+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 8*4+(40+1)*4(r1)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (40+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 8*4+(40+2)*4(r1)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (40+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 8*4+(40+3)*4(r1)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (40+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 8*4+(44+0)*4(r1)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (44+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 8*4+(44+1)*4(r1)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (44+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 8*4+(44+2)*4(r1)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (44+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 8*4+(44+3)*4(r1)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (44+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 8*4+(48+0)*4(r1)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (48+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 8*4+(48+1)*4(r1)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (48+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 8*4+(48+2)*4(r1)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (48+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 8*4+(48+3)*4(r1)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (48+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 8*4+(52+0)*4(r1)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (52+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 8*4+(52+1)*4(r1)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (52+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 8*4+(52+2)*4(r1)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (52+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 8*4+(52+3)*4(r1)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (52+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 8*4+(56+0)*4(r1)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (56+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 8*4+(56+1)*4(r1)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (56+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 8*4+(56+2)*4(r1)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (56+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 8*4+(56+3)*4(r1)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (56+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 8*4+(60+0)*4(r1)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (60+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 8*4+(60+1)*4(r1)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (60+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 8*4+(60+2)*4(r1)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (60+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 8*4+(60+3)*4(r1)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (60+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
 	
 	lwz	r12, 0*4(r3)
 	lwz	r13, 1*4(r3)
@@ -546,22 +2910,502 @@ _sha256d_ms:
 	add	r5, r5, r12
 	stw	r5, 31*4(r17)
 	
-	sha256_extend_doubleround 16, r17, 0, r6, r7, r4, r5
-	sha256_extend_doubleround 18, r17, 0, r8, r9, r6, r7
-	sha256_extend_doubleround 20, r17, 0, r10, r4, r8, r9
-	sha256_extend_doubleround 22, r17, 0, r5, r6, r10, r4
-	sha256_extend_doubleround 24, r17, 0, r7, r8, r5, r6
-	sha256_extend_doubleround 26, r17, 0, r9, r10, r7, r8
-	sha256_extend_doubleround 28, r17, 0, r4, r5, r9, r10
-	sha256_extend_doubleround 30, r17, 0, r6, r7, r4, r5
-	sha256_extend_doubleround 32, r17, 0, r8, r9, r6, r7
-	sha256_extend_doubleround 34, r17, 0, r10, r4, r8, r9
-	sha256_extend_doubleround 36, r17, 0, r5, r6, r10, r4
-	sha256_extend_doubleround 38, r17, 0, r7, r8, r5, r6
-	sha256_extend_doubleround 40, r17, 0, r9, r10, r7, r8
-	sha256_extend_doubleround 42, r17, 0, r4, r5, r9, r10
-	sha256_extend_doubleround 44, r17, 0, r6, r7, r4, r5
-	sha256_extend_doubleround 46, r17, 0, r8, r9, r6, r7
+	lwz	r14, 0+(16+1)*4(r17)
+	rotrwi	r12, r4, 17
+	rotrwi	r13, r4, 19
+	add	r11, r11, r6
+	xor	r12, r12, r13
+	srwi	r13, r4, 10
+	rotrwi	r6, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r6, r6, r13
+	srwi	r13, r14, 3
+	lwz	r11, 0+(16+2)*4(r17)
+	xor	r6, r6, r13
+	rotrwi	r13, r5, 19
+	add	r6, r6, r12
+
+	rotrwi	r12, r5, 17
+	add	r14, r14, r7
+	xor	r12, r12, r13
+	srwi	r13, r5, 10
+	rotrwi	r7, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r6, 0+(16+16)*4(r17)
+	xor	r7, r7, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r7, r7, r13
+	add	r7, r7, r14
+	stw	r7, 0+(16+17)*4(r17)
+	lwz	r14, 0+(18+1)*4(r17)
+	rotrwi	r12, r6, 17
+	rotrwi	r13, r6, 19
+	add	r11, r11, r8
+	xor	r12, r12, r13
+	srwi	r13, r6, 10
+	rotrwi	r8, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r8, r8, r13
+	srwi	r13, r14, 3
+	lwz	r11, 0+(18+2)*4(r17)
+	xor	r8, r8, r13
+	rotrwi	r13, r7, 19
+	add	r8, r8, r12
+
+	rotrwi	r12, r7, 17
+	add	r14, r14, r9
+	xor	r12, r12, r13
+	srwi	r13, r7, 10
+	rotrwi	r9, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r8, 0+(18+16)*4(r17)
+	xor	r9, r9, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r9, r9, r13
+	add	r9, r9, r14
+	stw	r9, 0+(18+17)*4(r17)
+	lwz	r14, 0+(20+1)*4(r17)
+	rotrwi	r12, r8, 17
+	rotrwi	r13, r8, 19
+	add	r11, r11, r10
+	xor	r12, r12, r13
+	srwi	r13, r8, 10
+	rotrwi	r10, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r10, r10, r13
+	srwi	r13, r14, 3
+	lwz	r11, 0+(20+2)*4(r17)
+	xor	r10, r10, r13
+	rotrwi	r13, r9, 19
+	add	r10, r10, r12
+
+	rotrwi	r12, r9, 17
+	add	r14, r14, r4
+	xor	r12, r12, r13
+	srwi	r13, r9, 10
+	rotrwi	r4, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r10, 0+(20+16)*4(r17)
+	xor	r4, r4, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r4, r4, r13
+	add	r4, r4, r14
+	stw	r4, 0+(20+17)*4(r17)
+	lwz	r14, 0+(22+1)*4(r17)
+	rotrwi	r12, r10, 17
+	rotrwi	r13, r10, 19
+	add	r11, r11, r5
+	xor	r12, r12, r13
+	srwi	r13, r10, 10
+	rotrwi	r5, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r5, r5, r13
+	srwi	r13, r14, 3
+	lwz	r11, 0+(22+2)*4(r17)
+	xor	r5, r5, r13
+	rotrwi	r13, r4, 19
+	add	r5, r5, r12
+
+	rotrwi	r12, r4, 17
+	add	r14, r14, r6
+	xor	r12, r12, r13
+	srwi	r13, r4, 10
+	rotrwi	r6, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r5, 0+(22+16)*4(r17)
+	xor	r6, r6, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r6, r6, r13
+	add	r6, r6, r14
+	stw	r6, 0+(22+17)*4(r17)
+	lwz	r14, 0+(24+1)*4(r17)
+	rotrwi	r12, r5, 17
+	rotrwi	r13, r5, 19
+	add	r11, r11, r7
+	xor	r12, r12, r13
+	srwi	r13, r5, 10
+	rotrwi	r7, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r7, r7, r13
+	srwi	r13, r14, 3
+	lwz	r11, 0+(24+2)*4(r17)
+	xor	r7, r7, r13
+	rotrwi	r13, r6, 19
+	add	r7, r7, r12
+
+	rotrwi	r12, r6, 17
+	add	r14, r14, r8
+	xor	r12, r12, r13
+	srwi	r13, r6, 10
+	rotrwi	r8, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r7, 0+(24+16)*4(r17)
+	xor	r8, r8, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r8, r8, r13
+	add	r8, r8, r14
+	stw	r8, 0+(24+17)*4(r17)
+	lwz	r14, 0+(26+1)*4(r17)
+	rotrwi	r12, r7, 17
+	rotrwi	r13, r7, 19
+	add	r11, r11, r9
+	xor	r12, r12, r13
+	srwi	r13, r7, 10
+	rotrwi	r9, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r9, r9, r13
+	srwi	r13, r14, 3
+	lwz	r11, 0+(26+2)*4(r17)
+	xor	r9, r9, r13
+	rotrwi	r13, r8, 19
+	add	r9, r9, r12
+
+	rotrwi	r12, r8, 17
+	add	r14, r14, r10
+	xor	r12, r12, r13
+	srwi	r13, r8, 10
+	rotrwi	r10, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r9, 0+(26+16)*4(r17)
+	xor	r10, r10, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r10, r10, r13
+	add	r10, r10, r14
+	stw	r10, 0+(26+17)*4(r17)
+	lwz	r14, 0+(28+1)*4(r17)
+	rotrwi	r12, r9, 17
+	rotrwi	r13, r9, 19
+	add	r11, r11, r4
+	xor	r12, r12, r13
+	srwi	r13, r9, 10
+	rotrwi	r4, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r4, r4, r13
+	srwi	r13, r14, 3
+	lwz	r11, 0+(28+2)*4(r17)
+	xor	r4, r4, r13
+	rotrwi	r13, r10, 19
+	add	r4, r4, r12
+
+	rotrwi	r12, r10, 17
+	add	r14, r14, r5
+	xor	r12, r12, r13
+	srwi	r13, r10, 10
+	rotrwi	r5, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r4, 0+(28+16)*4(r17)
+	xor	r5, r5, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r5, r5, r13
+	add	r5, r5, r14
+	stw	r5, 0+(28+17)*4(r17)
+	lwz	r14, 0+(30+1)*4(r17)
+	rotrwi	r12, r4, 17
+	rotrwi	r13, r4, 19
+	add	r11, r11, r6
+	xor	r12, r12, r13
+	srwi	r13, r4, 10
+	rotrwi	r6, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r6, r6, r13
+	srwi	r13, r14, 3
+	lwz	r11, 0+(30+2)*4(r17)
+	xor	r6, r6, r13
+	rotrwi	r13, r5, 19
+	add	r6, r6, r12
+
+	rotrwi	r12, r5, 17
+	add	r14, r14, r7
+	xor	r12, r12, r13
+	srwi	r13, r5, 10
+	rotrwi	r7, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r6, 0+(30+16)*4(r17)
+	xor	r7, r7, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r7, r7, r13
+	add	r7, r7, r14
+	stw	r7, 0+(30+17)*4(r17)
+	lwz	r14, 0+(32+1)*4(r17)
+	rotrwi	r12, r6, 17
+	rotrwi	r13, r6, 19
+	add	r11, r11, r8
+	xor	r12, r12, r13
+	srwi	r13, r6, 10
+	rotrwi	r8, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r8, r8, r13
+	srwi	r13, r14, 3
+	lwz	r11, 0+(32+2)*4(r17)
+	xor	r8, r8, r13
+	rotrwi	r13, r7, 19
+	add	r8, r8, r12
+
+	rotrwi	r12, r7, 17
+	add	r14, r14, r9
+	xor	r12, r12, r13
+	srwi	r13, r7, 10
+	rotrwi	r9, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r8, 0+(32+16)*4(r17)
+	xor	r9, r9, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r9, r9, r13
+	add	r9, r9, r14
+	stw	r9, 0+(32+17)*4(r17)
+	lwz	r14, 0+(34+1)*4(r17)
+	rotrwi	r12, r8, 17
+	rotrwi	r13, r8, 19
+	add	r11, r11, r10
+	xor	r12, r12, r13
+	srwi	r13, r8, 10
+	rotrwi	r10, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r10, r10, r13
+	srwi	r13, r14, 3
+	lwz	r11, 0+(34+2)*4(r17)
+	xor	r10, r10, r13
+	rotrwi	r13, r9, 19
+	add	r10, r10, r12
+
+	rotrwi	r12, r9, 17
+	add	r14, r14, r4
+	xor	r12, r12, r13
+	srwi	r13, r9, 10
+	rotrwi	r4, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r10, 0+(34+16)*4(r17)
+	xor	r4, r4, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r4, r4, r13
+	add	r4, r4, r14
+	stw	r4, 0+(34+17)*4(r17)
+	lwz	r14, 0+(36+1)*4(r17)
+	rotrwi	r12, r10, 17
+	rotrwi	r13, r10, 19
+	add	r11, r11, r5
+	xor	r12, r12, r13
+	srwi	r13, r10, 10
+	rotrwi	r5, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r5, r5, r13
+	srwi	r13, r14, 3
+	lwz	r11, 0+(36+2)*4(r17)
+	xor	r5, r5, r13
+	rotrwi	r13, r4, 19
+	add	r5, r5, r12
+
+	rotrwi	r12, r4, 17
+	add	r14, r14, r6
+	xor	r12, r12, r13
+	srwi	r13, r4, 10
+	rotrwi	r6, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r5, 0+(36+16)*4(r17)
+	xor	r6, r6, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r6, r6, r13
+	add	r6, r6, r14
+	stw	r6, 0+(36+17)*4(r17)
+	lwz	r14, 0+(38+1)*4(r17)
+	rotrwi	r12, r5, 17
+	rotrwi	r13, r5, 19
+	add	r11, r11, r7
+	xor	r12, r12, r13
+	srwi	r13, r5, 10
+	rotrwi	r7, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r7, r7, r13
+	srwi	r13, r14, 3
+	lwz	r11, 0+(38+2)*4(r17)
+	xor	r7, r7, r13
+	rotrwi	r13, r6, 19
+	add	r7, r7, r12
+
+	rotrwi	r12, r6, 17
+	add	r14, r14, r8
+	xor	r12, r12, r13
+	srwi	r13, r6, 10
+	rotrwi	r8, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r7, 0+(38+16)*4(r17)
+	xor	r8, r8, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r8, r8, r13
+	add	r8, r8, r14
+	stw	r8, 0+(38+17)*4(r17)
+	lwz	r14, 0+(40+1)*4(r17)
+	rotrwi	r12, r7, 17
+	rotrwi	r13, r7, 19
+	add	r11, r11, r9
+	xor	r12, r12, r13
+	srwi	r13, r7, 10
+	rotrwi	r9, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r9, r9, r13
+	srwi	r13, r14, 3
+	lwz	r11, 0+(40+2)*4(r17)
+	xor	r9, r9, r13
+	rotrwi	r13, r8, 19
+	add	r9, r9, r12
+
+	rotrwi	r12, r8, 17
+	add	r14, r14, r10
+	xor	r12, r12, r13
+	srwi	r13, r8, 10
+	rotrwi	r10, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r9, 0+(40+16)*4(r17)
+	xor	r10, r10, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r10, r10, r13
+	add	r10, r10, r14
+	stw	r10, 0+(40+17)*4(r17)
+	lwz	r14, 0+(42+1)*4(r17)
+	rotrwi	r12, r9, 17
+	rotrwi	r13, r9, 19
+	add	r11, r11, r4
+	xor	r12, r12, r13
+	srwi	r13, r9, 10
+	rotrwi	r4, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r4, r4, r13
+	srwi	r13, r14, 3
+	lwz	r11, 0+(42+2)*4(r17)
+	xor	r4, r4, r13
+	rotrwi	r13, r10, 19
+	add	r4, r4, r12
+
+	rotrwi	r12, r10, 17
+	add	r14, r14, r5
+	xor	r12, r12, r13
+	srwi	r13, r10, 10
+	rotrwi	r5, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r4, 0+(42+16)*4(r17)
+	xor	r5, r5, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r5, r5, r13
+	add	r5, r5, r14
+	stw	r5, 0+(42+17)*4(r17)
+	lwz	r14, 0+(44+1)*4(r17)
+	rotrwi	r12, r4, 17
+	rotrwi	r13, r4, 19
+	add	r11, r11, r6
+	xor	r12, r12, r13
+	srwi	r13, r4, 10
+	rotrwi	r6, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r6, r6, r13
+	srwi	r13, r14, 3
+	lwz	r11, 0+(44+2)*4(r17)
+	xor	r6, r6, r13
+	rotrwi	r13, r5, 19
+	add	r6, r6, r12
+
+	rotrwi	r12, r5, 17
+	add	r14, r14, r7
+	xor	r12, r12, r13
+	srwi	r13, r5, 10
+	rotrwi	r7, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r6, 0+(44+16)*4(r17)
+	xor	r7, r7, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r7, r7, r13
+	add	r7, r7, r14
+	stw	r7, 0+(44+17)*4(r17)
+	lwz	r14, 0+(46+1)*4(r17)
+	rotrwi	r12, r6, 17
+	rotrwi	r13, r6, 19
+	add	r11, r11, r8
+	xor	r12, r12, r13
+	srwi	r13, r6, 10
+	rotrwi	r8, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r8, r8, r13
+	srwi	r13, r14, 3
+	lwz	r11, 0+(46+2)*4(r17)
+	xor	r8, r8, r13
+	rotrwi	r13, r7, 19
+	add	r8, r8, r12
+
+	rotrwi	r12, r7, 17
+	add	r14, r14, r9
+	xor	r12, r12, r13
+	srwi	r13, r7, 10
+	rotrwi	r9, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r8, 0+(46+16)*4(r17)
+	xor	r9, r9, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r9, r9, r13
+	add	r9, r9, r14
+	stw	r9, 0+(46+17)*4(r17)
 	
 	lwz	r4,  0*4(r16)
 	lwz	r9,  1*4(r16)
@@ -578,22 +3422,1653 @@ _sha256d_ms:
 	addi	r16, r16, LO(sha256_k)
 #endif
 	
-	sha256_main_round  3, r16, r17, 0, r5, r6, r7, r4, r9, r10, r11, r8
-	sha256_main_quadround  4, r16, r17, 0
-	sha256_main_quadround  8, r16, r17, 0
-	sha256_main_quadround 12, r16, r17, 0
-	sha256_main_quadround 16, r16, r17, 0
-	sha256_main_quadround 20, r16, r17, 0
-	sha256_main_quadround 24, r16, r17, 0
-	sha256_main_quadround 28, r16, r17, 0
-	sha256_main_quadround 32, r16, r17, 0
-	sha256_main_quadround 36, r16, r17, 0
-	sha256_main_quadround 40, r16, r17, 0
-	sha256_main_quadround 44, r16, r17, 0
-	sha256_main_quadround 48, r16, r17, 0
-	sha256_main_quadround 52, r16, r17, 0
-	sha256_main_quadround 56, r16, r17, 0
-	sha256_main_quadround 60, r16, r17, 0
+	lwz	r12, 0+(3)*4(r17)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 0+(4+0)*4(r17)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (4+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 0+(4+1)*4(r17)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (4+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 0+(4+2)*4(r17)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (4+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 0+(4+3)*4(r17)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (4+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 0+(8+0)*4(r17)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (8+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 0+(8+1)*4(r17)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (8+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 0+(8+2)*4(r17)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (8+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 0+(8+3)*4(r17)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (8+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 0+(12+0)*4(r17)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (12+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 0+(12+1)*4(r17)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (12+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 0+(12+2)*4(r17)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (12+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 0+(12+3)*4(r17)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (12+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 0+(16+0)*4(r17)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (16+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 0+(16+1)*4(r17)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (16+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 0+(16+2)*4(r17)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (16+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 0+(16+3)*4(r17)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (16+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 0+(20+0)*4(r17)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (20+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 0+(20+1)*4(r17)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (20+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 0+(20+2)*4(r17)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (20+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 0+(20+3)*4(r17)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (20+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 0+(24+0)*4(r17)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (24+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 0+(24+1)*4(r17)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (24+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 0+(24+2)*4(r17)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (24+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 0+(24+3)*4(r17)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (24+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 0+(28+0)*4(r17)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (28+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 0+(28+1)*4(r17)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (28+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 0+(28+2)*4(r17)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (28+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 0+(28+3)*4(r17)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (28+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 0+(32+0)*4(r17)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (32+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 0+(32+1)*4(r17)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (32+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 0+(32+2)*4(r17)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (32+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 0+(32+3)*4(r17)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (32+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 0+(36+0)*4(r17)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (36+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 0+(36+1)*4(r17)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (36+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 0+(36+2)*4(r17)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (36+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 0+(36+3)*4(r17)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (36+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 0+(40+0)*4(r17)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (40+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 0+(40+1)*4(r17)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (40+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 0+(40+2)*4(r17)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (40+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 0+(40+3)*4(r17)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (40+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 0+(44+0)*4(r17)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (44+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 0+(44+1)*4(r17)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (44+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 0+(44+2)*4(r17)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (44+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 0+(44+3)*4(r17)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (44+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 0+(48+0)*4(r17)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (48+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 0+(48+1)*4(r17)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (48+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 0+(48+2)*4(r17)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (48+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 0+(48+3)*4(r17)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (48+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 0+(52+0)*4(r17)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (52+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 0+(52+1)*4(r17)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (52+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 0+(52+2)*4(r17)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (52+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 0+(52+3)*4(r17)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (52+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 0+(56+0)*4(r17)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (56+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 0+(56+1)*4(r17)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (56+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 0+(56+2)*4(r17)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (56+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 0+(56+3)*4(r17)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (56+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 0+(60+0)*4(r17)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (60+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 0+(60+1)*4(r17)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (60+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 0+(60+2)*4(r17)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (60+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 0+(60+3)*4(r17)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (60+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
 	
 	lwz	r12, 0*4(r18)
 	lwz	r13, 1*4(r18)
@@ -829,20 +5304,440 @@ _sha256d_ms:
 	add	r5, r5, r12
 	stw	r5, 8*4+31*4(r1)
 	
-	sha256_extend_doubleround 16, r1, 8*4, r6, r7, r4, r5
-	sha256_extend_doubleround 18, r1, 8*4, r8, r9, r6, r7
-	sha256_extend_doubleround 20, r1, 8*4, r10, r4, r8, r9
-	sha256_extend_doubleround 22, r1, 8*4, r5, r6, r10, r4
-	sha256_extend_doubleround 24, r1, 8*4, r7, r8, r5, r6
-	sha256_extend_doubleround 26, r1, 8*4, r9, r10, r7, r8
-	sha256_extend_doubleround 28, r1, 8*4, r4, r5, r9, r10
-	sha256_extend_doubleround 30, r1, 8*4, r6, r7, r4, r5
-	sha256_extend_doubleround 32, r1, 8*4, r8, r9, r6, r7
-	sha256_extend_doubleround 34, r1, 8*4, r10, r4, r8, r9
-	sha256_extend_doubleround 36, r1, 8*4, r5, r6, r10, r4
-	sha256_extend_doubleround 38, r1, 8*4, r7, r8, r5, r6
-	sha256_extend_doubleround 40, r1, 8*4, r9, r10, r7, r8
-	sha256_extend_doubleround 42, r1, 8*4, r4, r5, r9, r10
+	lwz	r14, 8*4+(16+1)*4(r1)
+	rotrwi	r12, r4, 17
+	rotrwi	r13, r4, 19
+	add	r11, r11, r6
+	xor	r12, r12, r13
+	srwi	r13, r4, 10
+	rotrwi	r6, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r6, r6, r13
+	srwi	r13, r14, 3
+	lwz	r11, 8*4+(16+2)*4(r1)
+	xor	r6, r6, r13
+	rotrwi	r13, r5, 19
+	add	r6, r6, r12
+
+	rotrwi	r12, r5, 17
+	add	r14, r14, r7
+	xor	r12, r12, r13
+	srwi	r13, r5, 10
+	rotrwi	r7, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r6, 8*4+(16+16)*4(r1)
+	xor	r7, r7, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r7, r7, r13
+	add	r7, r7, r14
+	stw	r7, 8*4+(16+17)*4(r1)
+	lwz	r14, 8*4+(18+1)*4(r1)
+	rotrwi	r12, r6, 17
+	rotrwi	r13, r6, 19
+	add	r11, r11, r8
+	xor	r12, r12, r13
+	srwi	r13, r6, 10
+	rotrwi	r8, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r8, r8, r13
+	srwi	r13, r14, 3
+	lwz	r11, 8*4+(18+2)*4(r1)
+	xor	r8, r8, r13
+	rotrwi	r13, r7, 19
+	add	r8, r8, r12
+
+	rotrwi	r12, r7, 17
+	add	r14, r14, r9
+	xor	r12, r12, r13
+	srwi	r13, r7, 10
+	rotrwi	r9, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r8, 8*4+(18+16)*4(r1)
+	xor	r9, r9, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r9, r9, r13
+	add	r9, r9, r14
+	stw	r9, 8*4+(18+17)*4(r1)
+	lwz	r14, 8*4+(20+1)*4(r1)
+	rotrwi	r12, r8, 17
+	rotrwi	r13, r8, 19
+	add	r11, r11, r10
+	xor	r12, r12, r13
+	srwi	r13, r8, 10
+	rotrwi	r10, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r10, r10, r13
+	srwi	r13, r14, 3
+	lwz	r11, 8*4+(20+2)*4(r1)
+	xor	r10, r10, r13
+	rotrwi	r13, r9, 19
+	add	r10, r10, r12
+
+	rotrwi	r12, r9, 17
+	add	r14, r14, r4
+	xor	r12, r12, r13
+	srwi	r13, r9, 10
+	rotrwi	r4, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r10, 8*4+(20+16)*4(r1)
+	xor	r4, r4, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r4, r4, r13
+	add	r4, r4, r14
+	stw	r4, 8*4+(20+17)*4(r1)
+	lwz	r14, 8*4+(22+1)*4(r1)
+	rotrwi	r12, r10, 17
+	rotrwi	r13, r10, 19
+	add	r11, r11, r5
+	xor	r12, r12, r13
+	srwi	r13, r10, 10
+	rotrwi	r5, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r5, r5, r13
+	srwi	r13, r14, 3
+	lwz	r11, 8*4+(22+2)*4(r1)
+	xor	r5, r5, r13
+	rotrwi	r13, r4, 19
+	add	r5, r5, r12
+
+	rotrwi	r12, r4, 17
+	add	r14, r14, r6
+	xor	r12, r12, r13
+	srwi	r13, r4, 10
+	rotrwi	r6, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r5, 8*4+(22+16)*4(r1)
+	xor	r6, r6, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r6, r6, r13
+	add	r6, r6, r14
+	stw	r6, 8*4+(22+17)*4(r1)
+	lwz	r14, 8*4+(24+1)*4(r1)
+	rotrwi	r12, r5, 17
+	rotrwi	r13, r5, 19
+	add	r11, r11, r7
+	xor	r12, r12, r13
+	srwi	r13, r5, 10
+	rotrwi	r7, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r7, r7, r13
+	srwi	r13, r14, 3
+	lwz	r11, 8*4+(24+2)*4(r1)
+	xor	r7, r7, r13
+	rotrwi	r13, r6, 19
+	add	r7, r7, r12
+
+	rotrwi	r12, r6, 17
+	add	r14, r14, r8
+	xor	r12, r12, r13
+	srwi	r13, r6, 10
+	rotrwi	r8, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r7, 8*4+(24+16)*4(r1)
+	xor	r8, r8, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r8, r8, r13
+	add	r8, r8, r14
+	stw	r8, 8*4+(24+17)*4(r1)
+	lwz	r14, 8*4+(26+1)*4(r1)
+	rotrwi	r12, r7, 17
+	rotrwi	r13, r7, 19
+	add	r11, r11, r9
+	xor	r12, r12, r13
+	srwi	r13, r7, 10
+	rotrwi	r9, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r9, r9, r13
+	srwi	r13, r14, 3
+	lwz	r11, 8*4+(26+2)*4(r1)
+	xor	r9, r9, r13
+	rotrwi	r13, r8, 19
+	add	r9, r9, r12
+
+	rotrwi	r12, r8, 17
+	add	r14, r14, r10
+	xor	r12, r12, r13
+	srwi	r13, r8, 10
+	rotrwi	r10, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r9, 8*4+(26+16)*4(r1)
+	xor	r10, r10, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r10, r10, r13
+	add	r10, r10, r14
+	stw	r10, 8*4+(26+17)*4(r1)
+	lwz	r14, 8*4+(28+1)*4(r1)
+	rotrwi	r12, r9, 17
+	rotrwi	r13, r9, 19
+	add	r11, r11, r4
+	xor	r12, r12, r13
+	srwi	r13, r9, 10
+	rotrwi	r4, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r4, r4, r13
+	srwi	r13, r14, 3
+	lwz	r11, 8*4+(28+2)*4(r1)
+	xor	r4, r4, r13
+	rotrwi	r13, r10, 19
+	add	r4, r4, r12
+
+	rotrwi	r12, r10, 17
+	add	r14, r14, r5
+	xor	r12, r12, r13
+	srwi	r13, r10, 10
+	rotrwi	r5, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r4, 8*4+(28+16)*4(r1)
+	xor	r5, r5, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r5, r5, r13
+	add	r5, r5, r14
+	stw	r5, 8*4+(28+17)*4(r1)
+	lwz	r14, 8*4+(30+1)*4(r1)
+	rotrwi	r12, r4, 17
+	rotrwi	r13, r4, 19
+	add	r11, r11, r6
+	xor	r12, r12, r13
+	srwi	r13, r4, 10
+	rotrwi	r6, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r6, r6, r13
+	srwi	r13, r14, 3
+	lwz	r11, 8*4+(30+2)*4(r1)
+	xor	r6, r6, r13
+	rotrwi	r13, r5, 19
+	add	r6, r6, r12
+
+	rotrwi	r12, r5, 17
+	add	r14, r14, r7
+	xor	r12, r12, r13
+	srwi	r13, r5, 10
+	rotrwi	r7, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r6, 8*4+(30+16)*4(r1)
+	xor	r7, r7, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r7, r7, r13
+	add	r7, r7, r14
+	stw	r7, 8*4+(30+17)*4(r1)
+	lwz	r14, 8*4+(32+1)*4(r1)
+	rotrwi	r12, r6, 17
+	rotrwi	r13, r6, 19
+	add	r11, r11, r8
+	xor	r12, r12, r13
+	srwi	r13, r6, 10
+	rotrwi	r8, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r8, r8, r13
+	srwi	r13, r14, 3
+	lwz	r11, 8*4+(32+2)*4(r1)
+	xor	r8, r8, r13
+	rotrwi	r13, r7, 19
+	add	r8, r8, r12
+
+	rotrwi	r12, r7, 17
+	add	r14, r14, r9
+	xor	r12, r12, r13
+	srwi	r13, r7, 10
+	rotrwi	r9, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r8, 8*4+(32+16)*4(r1)
+	xor	r9, r9, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r9, r9, r13
+	add	r9, r9, r14
+	stw	r9, 8*4+(32+17)*4(r1)
+	lwz	r14, 8*4+(34+1)*4(r1)
+	rotrwi	r12, r8, 17
+	rotrwi	r13, r8, 19
+	add	r11, r11, r10
+	xor	r12, r12, r13
+	srwi	r13, r8, 10
+	rotrwi	r10, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r10, r10, r13
+	srwi	r13, r14, 3
+	lwz	r11, 8*4+(34+2)*4(r1)
+	xor	r10, r10, r13
+	rotrwi	r13, r9, 19
+	add	r10, r10, r12
+
+	rotrwi	r12, r9, 17
+	add	r14, r14, r4
+	xor	r12, r12, r13
+	srwi	r13, r9, 10
+	rotrwi	r4, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r10, 8*4+(34+16)*4(r1)
+	xor	r4, r4, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r4, r4, r13
+	add	r4, r4, r14
+	stw	r4, 8*4+(34+17)*4(r1)
+	lwz	r14, 8*4+(36+1)*4(r1)
+	rotrwi	r12, r10, 17
+	rotrwi	r13, r10, 19
+	add	r11, r11, r5
+	xor	r12, r12, r13
+	srwi	r13, r10, 10
+	rotrwi	r5, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r5, r5, r13
+	srwi	r13, r14, 3
+	lwz	r11, 8*4+(36+2)*4(r1)
+	xor	r5, r5, r13
+	rotrwi	r13, r4, 19
+	add	r5, r5, r12
+
+	rotrwi	r12, r4, 17
+	add	r14, r14, r6
+	xor	r12, r12, r13
+	srwi	r13, r4, 10
+	rotrwi	r6, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r5, 8*4+(36+16)*4(r1)
+	xor	r6, r6, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r6, r6, r13
+	add	r6, r6, r14
+	stw	r6, 8*4+(36+17)*4(r1)
+	lwz	r14, 8*4+(38+1)*4(r1)
+	rotrwi	r12, r5, 17
+	rotrwi	r13, r5, 19
+	add	r11, r11, r7
+	xor	r12, r12, r13
+	srwi	r13, r5, 10
+	rotrwi	r7, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r7, r7, r13
+	srwi	r13, r14, 3
+	lwz	r11, 8*4+(38+2)*4(r1)
+	xor	r7, r7, r13
+	rotrwi	r13, r6, 19
+	add	r7, r7, r12
+
+	rotrwi	r12, r6, 17
+	add	r14, r14, r8
+	xor	r12, r12, r13
+	srwi	r13, r6, 10
+	rotrwi	r8, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r7, 8*4+(38+16)*4(r1)
+	xor	r8, r8, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r8, r8, r13
+	add	r8, r8, r14
+	stw	r8, 8*4+(38+17)*4(r1)
+	lwz	r14, 8*4+(40+1)*4(r1)
+	rotrwi	r12, r7, 17
+	rotrwi	r13, r7, 19
+	add	r11, r11, r9
+	xor	r12, r12, r13
+	srwi	r13, r7, 10
+	rotrwi	r9, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r9, r9, r13
+	srwi	r13, r14, 3
+	lwz	r11, 8*4+(40+2)*4(r1)
+	xor	r9, r9, r13
+	rotrwi	r13, r8, 19
+	add	r9, r9, r12
+
+	rotrwi	r12, r8, 17
+	add	r14, r14, r10
+	xor	r12, r12, r13
+	srwi	r13, r8, 10
+	rotrwi	r10, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r9, 8*4+(40+16)*4(r1)
+	xor	r10, r10, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r10, r10, r13
+	add	r10, r10, r14
+	stw	r10, 8*4+(40+17)*4(r1)
+	lwz	r14, 8*4+(42+1)*4(r1)
+	rotrwi	r12, r9, 17
+	rotrwi	r13, r9, 19
+	add	r11, r11, r4
+	xor	r12, r12, r13
+	srwi	r13, r9, 10
+	rotrwi	r4, r14, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r14, 18
+	add	r12, r12, r11
+	xor	r4, r4, r13
+	srwi	r13, r14, 3
+	lwz	r11, 8*4+(42+2)*4(r1)
+	xor	r4, r4, r13
+	rotrwi	r13, r10, 19
+	add	r4, r4, r12
+
+	rotrwi	r12, r10, 17
+	add	r14, r14, r5
+	xor	r12, r12, r13
+	srwi	r13, r10, 10
+	rotrwi	r5, r11, 7
+	xor	r12, r12, r13
+	rotrwi	r13, r11, 18
+	stw	r4, 8*4+(42+16)*4(r1)
+	xor	r5, r5, r13
+	srwi	r13, r11, 3
+	add	r14, r14, r12
+	xor	r5, r5, r13
+	add	r5, r5, r14
+	stw	r5, 8*4+(42+17)*4(r1)
 	
 #ifdef _AIX
 	ld	r18, T.sha256_h(r2)
@@ -878,45 +5773,1608 @@ _sha256d_ms:
 	lwz	r6, 2*4(r18)
 	lwz	r7, 3*4(r18)
 	
-	sha256_main_quadround  0, r16, r1, 8*4
-	sha256_main_quadround  4, r16, r1, 8*4
-	sha256_main_quadround  8, r16, r1, 8*4
-	sha256_main_quadround 12, r16, r1, 8*4
-	sha256_main_quadround 16, r16, r1, 8*4
-	sha256_main_quadround 20, r16, r1, 8*4
-	sha256_main_quadround 24, r16, r1, 8*4
-	sha256_main_quadround 28, r16, r1, 8*4
-	sha256_main_quadround 32, r16, r1, 8*4
-	sha256_main_quadround 36, r16, r1, 8*4
-	sha256_main_quadround 40, r16, r1, 8*4
-	sha256_main_quadround 44, r16, r1, 8*4
-	sha256_main_quadround 48, r16, r1, 8*4
-	sha256_main_quadround 52, r16, r1, 8*4
-	sha256_main_round 56, r16, r1, 8*4, r4, r5, r6, r7, r8, r9, r10, r11
-
-.macro sha256_main_round_red i, rk, rw, wo, rd, re, rf, rg, rh
-	lwz	r12, \wo+(\i)*4(\rw)
-	and	r15, \rf, \re
-	andc	r14, \rg, \re
-	add	\rh, \rh, \rd
-	or	r14, r14, r15
-	lwz	r15, (\i)*4(\rk)
-	rotrwi	r13, \re, 5
-	add	\rh, \rh, r14
-	xor	r14, \re, r13
-	rotrwi	r13, \re, 19
-	add	\rh, \rh, r12
+	lwz	r12, 8*4+(0+0)*4(r1)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (0+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
 	xor	r14, r14, r13
-	add	\rh, \rh, r15
+	add	r11, r11, r15
 	rotrwi	r13, r14, 6
-	add	\rh, \rh, r13
-.endm
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 8*4+(0+1)*4(r1)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (0+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 8*4+(0+2)*4(r1)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (0+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 8*4+(0+3)*4(r1)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (0+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 8*4+(4+0)*4(r1)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (4+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 8*4+(4+1)*4(r1)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (4+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 8*4+(4+2)*4(r1)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (4+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 8*4+(4+3)*4(r1)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (4+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 8*4+(8+0)*4(r1)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (8+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 8*4+(8+1)*4(r1)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (8+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 8*4+(8+2)*4(r1)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (8+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 8*4+(8+3)*4(r1)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (8+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 8*4+(12+0)*4(r1)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (12+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 8*4+(12+1)*4(r1)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (12+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 8*4+(12+2)*4(r1)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (12+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 8*4+(12+3)*4(r1)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (12+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 8*4+(16+0)*4(r1)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (16+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 8*4+(16+1)*4(r1)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (16+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 8*4+(16+2)*4(r1)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (16+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 8*4+(16+3)*4(r1)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (16+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 8*4+(20+0)*4(r1)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (20+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 8*4+(20+1)*4(r1)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (20+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 8*4+(20+2)*4(r1)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (20+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 8*4+(20+3)*4(r1)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (20+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 8*4+(24+0)*4(r1)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (24+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 8*4+(24+1)*4(r1)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (24+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 8*4+(24+2)*4(r1)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (24+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 8*4+(24+3)*4(r1)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (24+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 8*4+(28+0)*4(r1)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (28+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 8*4+(28+1)*4(r1)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (28+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 8*4+(28+2)*4(r1)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (28+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 8*4+(28+3)*4(r1)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (28+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 8*4+(32+0)*4(r1)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (32+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 8*4+(32+1)*4(r1)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (32+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 8*4+(32+2)*4(r1)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (32+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 8*4+(32+3)*4(r1)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (32+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 8*4+(36+0)*4(r1)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (36+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 8*4+(36+1)*4(r1)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (36+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 8*4+(36+2)*4(r1)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (36+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 8*4+(36+3)*4(r1)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (36+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 8*4+(40+0)*4(r1)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (40+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 8*4+(40+1)*4(r1)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (40+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 8*4+(40+2)*4(r1)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (40+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 8*4+(40+3)*4(r1)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (40+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 8*4+(44+0)*4(r1)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (44+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 8*4+(44+1)*4(r1)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (44+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 8*4+(44+2)*4(r1)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (44+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 8*4+(44+3)*4(r1)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (44+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 8*4+(48+0)*4(r1)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (48+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 8*4+(48+1)*4(r1)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (48+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 8*4+(48+2)*4(r1)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (48+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 8*4+(48+3)*4(r1)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (48+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 8*4+(52+0)*4(r1)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (52+0)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+	lwz	r12, 8*4+(52+1)*4(r1)
+	and	r13, r8, r11
+	andc	r14, r9, r11
+	lwz	r15, (52+1)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r7, r4
+	add	r10, r10, r13
+
+	rotrwi	r13, r7, 11
+	and	r15, r15, r5
+	xor	r12, r7, r13
+	rotrwi	r13, r7, 20
+	and	r14, r7, r4
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r10, r14
+	add	r10, r10, r6
+	add	r6, r15, r13
+	lwz	r12, 8*4+(52+2)*4(r1)
+	and	r13, r11, r10
+	andc	r14, r8, r10
+	lwz	r15, (52+2)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r6, r7
+	add	r9, r9, r13
+
+	rotrwi	r13, r6, 11
+	and	r15, r15, r4
+	xor	r12, r6, r13
+	rotrwi	r13, r6, 20
+	and	r14, r6, r7
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r9, r14
+	add	r9, r9, r5
+	add	r5, r15, r13
+	lwz	r12, 8*4+(52+3)*4(r1)
+	and	r13, r10, r9
+	andc	r14, r11, r9
+	lwz	r15, (52+3)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r5, r6
+	add	r8, r8, r13
+
+	rotrwi	r13, r5, 11
+	and	r15, r15, r7
+	xor	r12, r5, r13
+	rotrwi	r13, r5, 20
+	and	r14, r5, r6
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r8, r14
+	add	r8, r8, r4
+	add	r4, r15, r13
+	lwz	r12, 8*4+(56)*4(r1)
+	and	r13, r9, r8
+	andc	r14, r10, r8
+	lwz	r15, (56)*4(r16)
+	or	r14, r14, r13
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	xor	r15, r4, r5
+	add	r11, r11, r13
+
+	rotrwi	r13, r4, 11
+	and	r15, r15, r6
+	xor	r12, r4, r13
+	rotrwi	r13, r4, 20
+	and	r14, r4, r5
+	xor	r12, r12, r13
+	xor	r14, r14, r15
+	rotrwi	r13, r12, 2
+	add	r15, r11, r14
+	add	r11, r11, r7
+	add	r7, r15, r13
+
 	
-	sha256_main_round_red 57, r16, r1, 8*4, r6, r11, r8, r9, r10
-	sha256_main_round_red 58, r16, r1, 8*4, r5, r10, r11, r8, r9
-	sha256_main_round_red 59, r16, r1, 8*4, r4, r9, r10, r11, r8
+	lwz	r12, 8*4+(57)*4(r1)
+	and	r15, r8, r11
+	andc	r14, r9, r11
+	add	r10, r10, r6
+	or	r14, r14, r15
+	lwz	r15, (57)*4(r16)
+	rotrwi	r13, r11, 5
+	add	r10, r10, r14
+	xor	r14, r11, r13
+	rotrwi	r13, r11, 19
+	add	r10, r10, r12
+	xor	r14, r14, r13
+	add	r10, r10, r15
+	rotrwi	r13, r14, 6
+	add	r10, r10, r13
+	lwz	r12, 8*4+(58)*4(r1)
+	and	r15, r11, r10
+	andc	r14, r8, r10
+	add	r9, r9, r5
+	or	r14, r14, r15
+	lwz	r15, (58)*4(r16)
+	rotrwi	r13, r10, 5
+	add	r9, r9, r14
+	xor	r14, r10, r13
+	rotrwi	r13, r10, 19
+	add	r9, r9, r12
+	xor	r14, r14, r13
+	add	r9, r9, r15
+	rotrwi	r13, r14, 6
+	add	r9, r9, r13
+	lwz	r12, 8*4+(59)*4(r1)
+	and	r15, r10, r9
+	andc	r14, r11, r9
+	add	r8, r8, r4
+	or	r14, r14, r15
+	lwz	r15, (59)*4(r16)
+	rotrwi	r13, r9, 5
+	add	r8, r8, r14
+	xor	r14, r9, r13
+	rotrwi	r13, r9, 19
+	add	r8, r8, r12
+	xor	r14, r14, r13
+	add	r8, r8, r15
+	rotrwi	r13, r14, 6
+	add	r8, r8, r13
 	lwz	r5, 7*4(r18)
-	sha256_main_round_red 60, r16, r1, 8*4, r7, r8, r9, r10, r11
+	lwz	r12, 8*4+(60)*4(r1)
+	and	r15, r9, r8
+	andc	r14, r10, r8
+	add	r11, r11, r7
+	or	r14, r14, r15
+	lwz	r15, (60)*4(r16)
+	rotrwi	r13, r8, 5
+	add	r11, r11, r14
+	xor	r14, r8, r13
+	rotrwi	r13, r8, 19
+	add	r11, r11, r12
+	xor	r14, r14, r13
+	add	r11, r11, r15
+	rotrwi	r13, r14, 6
+	add	r11, r11, r13
 	
 	add	r11, r11, r5
 	stw	r11, 7*4(r3)
@@ -1044,96 +7502,11 @@ T.br_perm:
 #endif
 
 
-.macro sha256_4way_extend_setup
-	vspltisw	v0, 10
-	vspltisw	v1, -7
-	vspltisw	v16, 3
-	vspltisw	v17, 15
-	vspltisw	v18, 14
-	vspltisw	v19, 13
-.endm
-
-.macro sha256_4way_extend_doubleround i, rw, va, vb, vy, vz
-	lvx	v14, \rw, r7
-	vrlw	v12, \vy, v17
-	vrlw	v13, \vy, v19
-	vadduwm	v11, v11, \va
-	vxor	v12, v12, v13
-	vsrw	v13, \vy, v0
-	vrlw	\va, v14, v1
-	vxor	v12, v12, v13
-	vrlw	v13, v14, v18
-	vadduwm	v12, v12, v11
-	vxor	\va, \va, v13
-	vsrw	v13, v14, v16
-	lvx	v11, \rw, r8
-	vxor	\va, \va, v13
-	vrlw	v13, \vz, v19
-	vadduwm	\va, \va, v12
-
-	vrlw	v12, \vz, v17
-	vadduwm	v14, v14, \vb
-	vxor	v12, v12, v13
-	vsrw	v13, \vz, v0
-	vrlw	\vb, v11, v1
-	vxor	v12, v12, v13
-	vrlw	v13, v11, v18
-	stvx	\va, \rw, r10
-	vxor	\vb, \vb, v13
-	vsrw	v13, v11, v16
-	vadduwm	v14, v14, v12
-	vxor	\vb, \vb, v13
-	vadduwm	\vb, \vb, v14
-	stvx	\vb, \rw, r11
-	addi	\rw, \rw, 2*16
-.endm
 
 
-.macro sha256_4way_main_setup
-	vspltisw	v2, 12
-	vspltisw	v3, -5
-	vspltisw	v16, -6
-	vspltisw	v17, -11
-	vspltisw	v18, -2
-.endm
 
-.macro sha256_4way_main_round i, rk, rw, va, vb, vc, vd, ve, vf, vg, vh
-	li	r6, (\i)*16
-	lvx	v12, \rw, r6
-	vand	v13, \vf, \ve
-	vandc	v14, \vg, \ve
-	lvx	v15, \rk, r6
-	vor	v14, v14, v13
-	vrlw	v13, \ve, v3
-	vadduwm	\vh, \vh, v14
-	vxor	v14, \ve, v13
-	vrlw	v13, \ve, v19
-	vadduwm	\vh, \vh, v12
-	vxor	v14, v14, v13
-	vadduwm	\vh, \vh, v15
-	vrlw	v13, v14, v16
-	vxor	v15, \va, \vb
-	vadduwm	\vh, \vh, v13
 
-	vrlw	v13, \va, v17
-	vand	v15, v15, \vc
-	vxor	v12, \va, v13
-	vrlw	v13, \va, v2
-	vand	v14, \va, \vb
-	vxor	v12, v12, v13
-	vxor	v14, v14, v15
-	vrlw	v13, v12, v18
-	vadduwm	v15, \vh, v14
-	vadduwm	\vh, \vh, \vd
-	vadduwm	\vd, v15, v13
-.endm
 
-.macro sha256_4way_main_quadround i, rk, rw
-	sha256_4way_main_round \i+0, \rk, \rw, v4, v5, v6, v7, v8, v9, v10, v11
-	sha256_4way_main_round \i+1, \rk, \rw, v7, v4, v5, v6, v11, v8, v9, v10
-	sha256_4way_main_round \i+2, \rk, \rw, v6, v7, v4, v5, v10, v11, v8, v9
-	sha256_4way_main_round \i+3, \rk, \rw, v5, v6, v7, v4, v9, v10, v11, v8
-.endm
 
 
 #ifdef _AIX
@@ -1321,31 +7694,780 @@ sha256_transform_4way_swap:
 sha256_transform_4way_extend:
 	li	r10, 16*16
 	li	r11, 17*16
-	sha256_4way_extend_setup
-	sha256_4way_extend_doubleround  0, r5, v4, v5, v9, v10
-	sha256_4way_extend_doubleround  2, r5, v6, v7, v4, v5
-	sha256_4way_extend_doubleround  4, r5, v8, v9, v6, v7
-	sha256_4way_extend_doubleround  6, r5, v10, v4, v8, v9
-	sha256_4way_extend_doubleround  8, r5, v5, v6, v10, v4
-	sha256_4way_extend_doubleround 10, r5, v7, v8, v5, v6
-	sha256_4way_extend_doubleround 12, r5, v9, v10, v7, v8
-	sha256_4way_extend_doubleround 14, r5, v4, v5, v9, v10
-	sha256_4way_extend_doubleround 16, r5, v6, v7, v4, v5
-	sha256_4way_extend_doubleround 18, r5, v8, v9, v6, v7
-	sha256_4way_extend_doubleround 20, r5, v10, v4, v8, v9
-	sha256_4way_extend_doubleround 22, r5, v5, v6, v10, v4
-	sha256_4way_extend_doubleround 24, r5, v7, v8, v5, v6
-	sha256_4way_extend_doubleround 26, r5, v9, v10, v7, v8
-	sha256_4way_extend_doubleround 28, r5, v4, v5, v9, v10
-	sha256_4way_extend_doubleround 30, r5, v6, v7, v4, v5
-	sha256_4way_extend_doubleround 32, r5, v8, v9, v6, v7
-	sha256_4way_extend_doubleround 34, r5, v10, v4, v8, v9
-	sha256_4way_extend_doubleround 36, r5, v5, v6, v10, v4
-	sha256_4way_extend_doubleround 38, r5, v7, v8, v5, v6
-	sha256_4way_extend_doubleround 40, r5, v9, v10, v7, v8
-	sha256_4way_extend_doubleround 42, r5, v4, v5, v9, v10
-	sha256_4way_extend_doubleround 44, r5, v6, v7, v4, v5
-	sha256_4way_extend_doubleround 46, r5, v8, v9, v6, v7
+	vspltisw	v0, 10
+	vspltisw	v1, -7
+	vspltisw	v16, 3
+	vspltisw	v17, 15
+	vspltisw	v18, 14
+	vspltisw	v19, 13
+	lvx	v14, r5, r7
+	vrlw	v12, v9, v17
+	vrlw	v13, v9, v19
+	vadduwm	v11, v11, v4
+	vxor	v12, v12, v13
+	vsrw	v13, v9, v0
+	vrlw	v4, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v4, v4, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r5, r8
+	vxor	v4, v4, v13
+	vrlw	v13, v10, v19
+	vadduwm	v4, v4, v12
+
+	vrlw	v12, v10, v17
+	vadduwm	v14, v14, v5
+	vxor	v12, v12, v13
+	vsrw	v13, v10, v0
+	vrlw	v5, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v4, r5, r10
+	vxor	v5, v5, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v5, v5, v13
+	vadduwm	v5, v5, v14
+	stvx	v5, r5, r11
+	addi	r5, r5, 2*16
+	lvx	v14, r5, r7
+	vrlw	v12, v4, v17
+	vrlw	v13, v4, v19
+	vadduwm	v11, v11, v6
+	vxor	v12, v12, v13
+	vsrw	v13, v4, v0
+	vrlw	v6, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v6, v6, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r5, r8
+	vxor	v6, v6, v13
+	vrlw	v13, v5, v19
+	vadduwm	v6, v6, v12
+
+	vrlw	v12, v5, v17
+	vadduwm	v14, v14, v7
+	vxor	v12, v12, v13
+	vsrw	v13, v5, v0
+	vrlw	v7, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v6, r5, r10
+	vxor	v7, v7, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v7, v7, v13
+	vadduwm	v7, v7, v14
+	stvx	v7, r5, r11
+	addi	r5, r5, 2*16
+	lvx	v14, r5, r7
+	vrlw	v12, v6, v17
+	vrlw	v13, v6, v19
+	vadduwm	v11, v11, v8
+	vxor	v12, v12, v13
+	vsrw	v13, v6, v0
+	vrlw	v8, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v8, v8, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r5, r8
+	vxor	v8, v8, v13
+	vrlw	v13, v7, v19
+	vadduwm	v8, v8, v12
+
+	vrlw	v12, v7, v17
+	vadduwm	v14, v14, v9
+	vxor	v12, v12, v13
+	vsrw	v13, v7, v0
+	vrlw	v9, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v8, r5, r10
+	vxor	v9, v9, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v9, v9, v13
+	vadduwm	v9, v9, v14
+	stvx	v9, r5, r11
+	addi	r5, r5, 2*16
+	lvx	v14, r5, r7
+	vrlw	v12, v8, v17
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v10
+	vxor	v12, v12, v13
+	vsrw	v13, v8, v0
+	vrlw	v10, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v10, v10, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r5, r8
+	vxor	v10, v10, v13
+	vrlw	v13, v9, v19
+	vadduwm	v10, v10, v12
+
+	vrlw	v12, v9, v17
+	vadduwm	v14, v14, v4
+	vxor	v12, v12, v13
+	vsrw	v13, v9, v0
+	vrlw	v4, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v10, r5, r10
+	vxor	v4, v4, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v4, v4, v13
+	vadduwm	v4, v4, v14
+	stvx	v4, r5, r11
+	addi	r5, r5, 2*16
+	lvx	v14, r5, r7
+	vrlw	v12, v10, v17
+	vrlw	v13, v10, v19
+	vadduwm	v11, v11, v5
+	vxor	v12, v12, v13
+	vsrw	v13, v10, v0
+	vrlw	v5, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v5, v5, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r5, r8
+	vxor	v5, v5, v13
+	vrlw	v13, v4, v19
+	vadduwm	v5, v5, v12
+
+	vrlw	v12, v4, v17
+	vadduwm	v14, v14, v6
+	vxor	v12, v12, v13
+	vsrw	v13, v4, v0
+	vrlw	v6, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v5, r5, r10
+	vxor	v6, v6, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v6, v6, v13
+	vadduwm	v6, v6, v14
+	stvx	v6, r5, r11
+	addi	r5, r5, 2*16
+	lvx	v14, r5, r7
+	vrlw	v12, v5, v17
+	vrlw	v13, v5, v19
+	vadduwm	v11, v11, v7
+	vxor	v12, v12, v13
+	vsrw	v13, v5, v0
+	vrlw	v7, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v7, v7, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r5, r8
+	vxor	v7, v7, v13
+	vrlw	v13, v6, v19
+	vadduwm	v7, v7, v12
+
+	vrlw	v12, v6, v17
+	vadduwm	v14, v14, v8
+	vxor	v12, v12, v13
+	vsrw	v13, v6, v0
+	vrlw	v8, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v7, r5, r10
+	vxor	v8, v8, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v8, v8, v13
+	vadduwm	v8, v8, v14
+	stvx	v8, r5, r11
+	addi	r5, r5, 2*16
+	lvx	v14, r5, r7
+	vrlw	v12, v7, v17
+	vrlw	v13, v7, v19
+	vadduwm	v11, v11, v9
+	vxor	v12, v12, v13
+	vsrw	v13, v7, v0
+	vrlw	v9, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v9, v9, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r5, r8
+	vxor	v9, v9, v13
+	vrlw	v13, v8, v19
+	vadduwm	v9, v9, v12
+
+	vrlw	v12, v8, v17
+	vadduwm	v14, v14, v10
+	vxor	v12, v12, v13
+	vsrw	v13, v8, v0
+	vrlw	v10, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v9, r5, r10
+	vxor	v10, v10, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v10, v10, v13
+	vadduwm	v10, v10, v14
+	stvx	v10, r5, r11
+	addi	r5, r5, 2*16
+	lvx	v14, r5, r7
+	vrlw	v12, v9, v17
+	vrlw	v13, v9, v19
+	vadduwm	v11, v11, v4
+	vxor	v12, v12, v13
+	vsrw	v13, v9, v0
+	vrlw	v4, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v4, v4, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r5, r8
+	vxor	v4, v4, v13
+	vrlw	v13, v10, v19
+	vadduwm	v4, v4, v12
+
+	vrlw	v12, v10, v17
+	vadduwm	v14, v14, v5
+	vxor	v12, v12, v13
+	vsrw	v13, v10, v0
+	vrlw	v5, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v4, r5, r10
+	vxor	v5, v5, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v5, v5, v13
+	vadduwm	v5, v5, v14
+	stvx	v5, r5, r11
+	addi	r5, r5, 2*16
+	lvx	v14, r5, r7
+	vrlw	v12, v4, v17
+	vrlw	v13, v4, v19
+	vadduwm	v11, v11, v6
+	vxor	v12, v12, v13
+	vsrw	v13, v4, v0
+	vrlw	v6, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v6, v6, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r5, r8
+	vxor	v6, v6, v13
+	vrlw	v13, v5, v19
+	vadduwm	v6, v6, v12
+
+	vrlw	v12, v5, v17
+	vadduwm	v14, v14, v7
+	vxor	v12, v12, v13
+	vsrw	v13, v5, v0
+	vrlw	v7, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v6, r5, r10
+	vxor	v7, v7, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v7, v7, v13
+	vadduwm	v7, v7, v14
+	stvx	v7, r5, r11
+	addi	r5, r5, 2*16
+	lvx	v14, r5, r7
+	vrlw	v12, v6, v17
+	vrlw	v13, v6, v19
+	vadduwm	v11, v11, v8
+	vxor	v12, v12, v13
+	vsrw	v13, v6, v0
+	vrlw	v8, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v8, v8, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r5, r8
+	vxor	v8, v8, v13
+	vrlw	v13, v7, v19
+	vadduwm	v8, v8, v12
+
+	vrlw	v12, v7, v17
+	vadduwm	v14, v14, v9
+	vxor	v12, v12, v13
+	vsrw	v13, v7, v0
+	vrlw	v9, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v8, r5, r10
+	vxor	v9, v9, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v9, v9, v13
+	vadduwm	v9, v9, v14
+	stvx	v9, r5, r11
+	addi	r5, r5, 2*16
+	lvx	v14, r5, r7
+	vrlw	v12, v8, v17
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v10
+	vxor	v12, v12, v13
+	vsrw	v13, v8, v0
+	vrlw	v10, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v10, v10, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r5, r8
+	vxor	v10, v10, v13
+	vrlw	v13, v9, v19
+	vadduwm	v10, v10, v12
+
+	vrlw	v12, v9, v17
+	vadduwm	v14, v14, v4
+	vxor	v12, v12, v13
+	vsrw	v13, v9, v0
+	vrlw	v4, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v10, r5, r10
+	vxor	v4, v4, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v4, v4, v13
+	vadduwm	v4, v4, v14
+	stvx	v4, r5, r11
+	addi	r5, r5, 2*16
+	lvx	v14, r5, r7
+	vrlw	v12, v10, v17
+	vrlw	v13, v10, v19
+	vadduwm	v11, v11, v5
+	vxor	v12, v12, v13
+	vsrw	v13, v10, v0
+	vrlw	v5, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v5, v5, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r5, r8
+	vxor	v5, v5, v13
+	vrlw	v13, v4, v19
+	vadduwm	v5, v5, v12
+
+	vrlw	v12, v4, v17
+	vadduwm	v14, v14, v6
+	vxor	v12, v12, v13
+	vsrw	v13, v4, v0
+	vrlw	v6, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v5, r5, r10
+	vxor	v6, v6, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v6, v6, v13
+	vadduwm	v6, v6, v14
+	stvx	v6, r5, r11
+	addi	r5, r5, 2*16
+	lvx	v14, r5, r7
+	vrlw	v12, v5, v17
+	vrlw	v13, v5, v19
+	vadduwm	v11, v11, v7
+	vxor	v12, v12, v13
+	vsrw	v13, v5, v0
+	vrlw	v7, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v7, v7, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r5, r8
+	vxor	v7, v7, v13
+	vrlw	v13, v6, v19
+	vadduwm	v7, v7, v12
+
+	vrlw	v12, v6, v17
+	vadduwm	v14, v14, v8
+	vxor	v12, v12, v13
+	vsrw	v13, v6, v0
+	vrlw	v8, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v7, r5, r10
+	vxor	v8, v8, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v8, v8, v13
+	vadduwm	v8, v8, v14
+	stvx	v8, r5, r11
+	addi	r5, r5, 2*16
+	lvx	v14, r5, r7
+	vrlw	v12, v7, v17
+	vrlw	v13, v7, v19
+	vadduwm	v11, v11, v9
+	vxor	v12, v12, v13
+	vsrw	v13, v7, v0
+	vrlw	v9, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v9, v9, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r5, r8
+	vxor	v9, v9, v13
+	vrlw	v13, v8, v19
+	vadduwm	v9, v9, v12
+
+	vrlw	v12, v8, v17
+	vadduwm	v14, v14, v10
+	vxor	v12, v12, v13
+	vsrw	v13, v8, v0
+	vrlw	v10, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v9, r5, r10
+	vxor	v10, v10, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v10, v10, v13
+	vadduwm	v10, v10, v14
+	stvx	v10, r5, r11
+	addi	r5, r5, 2*16
+	lvx	v14, r5, r7
+	vrlw	v12, v9, v17
+	vrlw	v13, v9, v19
+	vadduwm	v11, v11, v4
+	vxor	v12, v12, v13
+	vsrw	v13, v9, v0
+	vrlw	v4, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v4, v4, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r5, r8
+	vxor	v4, v4, v13
+	vrlw	v13, v10, v19
+	vadduwm	v4, v4, v12
+
+	vrlw	v12, v10, v17
+	vadduwm	v14, v14, v5
+	vxor	v12, v12, v13
+	vsrw	v13, v10, v0
+	vrlw	v5, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v4, r5, r10
+	vxor	v5, v5, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v5, v5, v13
+	vadduwm	v5, v5, v14
+	stvx	v5, r5, r11
+	addi	r5, r5, 2*16
+	lvx	v14, r5, r7
+	vrlw	v12, v4, v17
+	vrlw	v13, v4, v19
+	vadduwm	v11, v11, v6
+	vxor	v12, v12, v13
+	vsrw	v13, v4, v0
+	vrlw	v6, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v6, v6, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r5, r8
+	vxor	v6, v6, v13
+	vrlw	v13, v5, v19
+	vadduwm	v6, v6, v12
+
+	vrlw	v12, v5, v17
+	vadduwm	v14, v14, v7
+	vxor	v12, v12, v13
+	vsrw	v13, v5, v0
+	vrlw	v7, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v6, r5, r10
+	vxor	v7, v7, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v7, v7, v13
+	vadduwm	v7, v7, v14
+	stvx	v7, r5, r11
+	addi	r5, r5, 2*16
+	lvx	v14, r5, r7
+	vrlw	v12, v6, v17
+	vrlw	v13, v6, v19
+	vadduwm	v11, v11, v8
+	vxor	v12, v12, v13
+	vsrw	v13, v6, v0
+	vrlw	v8, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v8, v8, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r5, r8
+	vxor	v8, v8, v13
+	vrlw	v13, v7, v19
+	vadduwm	v8, v8, v12
+
+	vrlw	v12, v7, v17
+	vadduwm	v14, v14, v9
+	vxor	v12, v12, v13
+	vsrw	v13, v7, v0
+	vrlw	v9, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v8, r5, r10
+	vxor	v9, v9, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v9, v9, v13
+	vadduwm	v9, v9, v14
+	stvx	v9, r5, r11
+	addi	r5, r5, 2*16
+	lvx	v14, r5, r7
+	vrlw	v12, v8, v17
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v10
+	vxor	v12, v12, v13
+	vsrw	v13, v8, v0
+	vrlw	v10, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v10, v10, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r5, r8
+	vxor	v10, v10, v13
+	vrlw	v13, v9, v19
+	vadduwm	v10, v10, v12
+
+	vrlw	v12, v9, v17
+	vadduwm	v14, v14, v4
+	vxor	v12, v12, v13
+	vsrw	v13, v9, v0
+	vrlw	v4, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v10, r5, r10
+	vxor	v4, v4, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v4, v4, v13
+	vadduwm	v4, v4, v14
+	stvx	v4, r5, r11
+	addi	r5, r5, 2*16
+	lvx	v14, r5, r7
+	vrlw	v12, v10, v17
+	vrlw	v13, v10, v19
+	vadduwm	v11, v11, v5
+	vxor	v12, v12, v13
+	vsrw	v13, v10, v0
+	vrlw	v5, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v5, v5, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r5, r8
+	vxor	v5, v5, v13
+	vrlw	v13, v4, v19
+	vadduwm	v5, v5, v12
+
+	vrlw	v12, v4, v17
+	vadduwm	v14, v14, v6
+	vxor	v12, v12, v13
+	vsrw	v13, v4, v0
+	vrlw	v6, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v5, r5, r10
+	vxor	v6, v6, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v6, v6, v13
+	vadduwm	v6, v6, v14
+	stvx	v6, r5, r11
+	addi	r5, r5, 2*16
+	lvx	v14, r5, r7
+	vrlw	v12, v5, v17
+	vrlw	v13, v5, v19
+	vadduwm	v11, v11, v7
+	vxor	v12, v12, v13
+	vsrw	v13, v5, v0
+	vrlw	v7, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v7, v7, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r5, r8
+	vxor	v7, v7, v13
+	vrlw	v13, v6, v19
+	vadduwm	v7, v7, v12
+
+	vrlw	v12, v6, v17
+	vadduwm	v14, v14, v8
+	vxor	v12, v12, v13
+	vsrw	v13, v6, v0
+	vrlw	v8, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v7, r5, r10
+	vxor	v8, v8, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v8, v8, v13
+	vadduwm	v8, v8, v14
+	stvx	v8, r5, r11
+	addi	r5, r5, 2*16
+	lvx	v14, r5, r7
+	vrlw	v12, v7, v17
+	vrlw	v13, v7, v19
+	vadduwm	v11, v11, v9
+	vxor	v12, v12, v13
+	vsrw	v13, v7, v0
+	vrlw	v9, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v9, v9, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r5, r8
+	vxor	v9, v9, v13
+	vrlw	v13, v8, v19
+	vadduwm	v9, v9, v12
+
+	vrlw	v12, v8, v17
+	vadduwm	v14, v14, v10
+	vxor	v12, v12, v13
+	vsrw	v13, v8, v0
+	vrlw	v10, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v9, r5, r10
+	vxor	v10, v10, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v10, v10, v13
+	vadduwm	v10, v10, v14
+	stvx	v10, r5, r11
+	addi	r5, r5, 2*16
+	lvx	v14, r5, r7
+	vrlw	v12, v9, v17
+	vrlw	v13, v9, v19
+	vadduwm	v11, v11, v4
+	vxor	v12, v12, v13
+	vsrw	v13, v9, v0
+	vrlw	v4, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v4, v4, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r5, r8
+	vxor	v4, v4, v13
+	vrlw	v13, v10, v19
+	vadduwm	v4, v4, v12
+
+	vrlw	v12, v10, v17
+	vadduwm	v14, v14, v5
+	vxor	v12, v12, v13
+	vsrw	v13, v10, v0
+	vrlw	v5, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v4, r5, r10
+	vxor	v5, v5, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v5, v5, v13
+	vadduwm	v5, v5, v14
+	stvx	v5, r5, r11
+	addi	r5, r5, 2*16
+	lvx	v14, r5, r7
+	vrlw	v12, v4, v17
+	vrlw	v13, v4, v19
+	vadduwm	v11, v11, v6
+	vxor	v12, v12, v13
+	vsrw	v13, v4, v0
+	vrlw	v6, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v6, v6, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r5, r8
+	vxor	v6, v6, v13
+	vrlw	v13, v5, v19
+	vadduwm	v6, v6, v12
+
+	vrlw	v12, v5, v17
+	vadduwm	v14, v14, v7
+	vxor	v12, v12, v13
+	vsrw	v13, v5, v0
+	vrlw	v7, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v6, r5, r10
+	vxor	v7, v7, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v7, v7, v13
+	vadduwm	v7, v7, v14
+	stvx	v7, r5, r11
+	addi	r5, r5, 2*16
+	lvx	v14, r5, r7
+	vrlw	v12, v6, v17
+	vrlw	v13, v6, v19
+	vadduwm	v11, v11, v8
+	vxor	v12, v12, v13
+	vsrw	v13, v6, v0
+	vrlw	v8, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v8, v8, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r5, r8
+	vxor	v8, v8, v13
+	vrlw	v13, v7, v19
+	vadduwm	v8, v8, v12
+
+	vrlw	v12, v7, v17
+	vadduwm	v14, v14, v9
+	vxor	v12, v12, v13
+	vsrw	v13, v7, v0
+	vrlw	v9, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v8, r5, r10
+	vxor	v9, v9, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v9, v9, v13
+	vadduwm	v9, v9, v14
+	stvx	v9, r5, r11
+	addi	r5, r5, 2*16
 	
 	addi	r11, r3, 4*16
 	lvx	v4, 0, r3
@@ -1363,23 +8485,1803 @@ sha256_transform_4way_extend:
 	addi	r12, r12, LO(sha256_4k)
 #endif
 	addi	r5, r1, 4*4
-	sha256_4way_main_setup
-	sha256_4way_main_quadround  0, r12, r5
-	sha256_4way_main_quadround  4, r12, r5
-	sha256_4way_main_quadround  8, r12, r5
-	sha256_4way_main_quadround 12, r12, r5
-	sha256_4way_main_quadround 16, r12, r5
-	sha256_4way_main_quadround 20, r12, r5
-	sha256_4way_main_quadround 24, r12, r5
-	sha256_4way_main_quadround 28, r12, r5
-	sha256_4way_main_quadround 32, r12, r5
-	sha256_4way_main_quadround 36, r12, r5
-	sha256_4way_main_quadround 40, r12, r5
-	sha256_4way_main_quadround 44, r12, r5
-	sha256_4way_main_quadround 48, r12, r5
-	sha256_4way_main_quadround 52, r12, r5
-	sha256_4way_main_quadround 56, r12, r5
-	sha256_4way_main_quadround 60, r12, r5
+	vspltisw	v2, 12
+	vspltisw	v3, -5
+	vspltisw	v16, -6
+	vspltisw	v17, -11
+	vspltisw	v18, -2
+	li	r6, (0+0)*16
+	lvx	v12, r5, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (0+1)*16
+	lvx	v12, r5, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (0+2)*16
+	lvx	v12, r5, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (0+3)*16
+	lvx	v12, r5, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (4+0)*16
+	lvx	v12, r5, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (4+1)*16
+	lvx	v12, r5, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (4+2)*16
+	lvx	v12, r5, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (4+3)*16
+	lvx	v12, r5, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (8+0)*16
+	lvx	v12, r5, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (8+1)*16
+	lvx	v12, r5, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (8+2)*16
+	lvx	v12, r5, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (8+3)*16
+	lvx	v12, r5, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (12+0)*16
+	lvx	v12, r5, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (12+1)*16
+	lvx	v12, r5, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (12+2)*16
+	lvx	v12, r5, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (12+3)*16
+	lvx	v12, r5, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (16+0)*16
+	lvx	v12, r5, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (16+1)*16
+	lvx	v12, r5, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (16+2)*16
+	lvx	v12, r5, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (16+3)*16
+	lvx	v12, r5, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (20+0)*16
+	lvx	v12, r5, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (20+1)*16
+	lvx	v12, r5, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (20+2)*16
+	lvx	v12, r5, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (20+3)*16
+	lvx	v12, r5, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (24+0)*16
+	lvx	v12, r5, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (24+1)*16
+	lvx	v12, r5, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (24+2)*16
+	lvx	v12, r5, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (24+3)*16
+	lvx	v12, r5, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (28+0)*16
+	lvx	v12, r5, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (28+1)*16
+	lvx	v12, r5, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (28+2)*16
+	lvx	v12, r5, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (28+3)*16
+	lvx	v12, r5, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (32+0)*16
+	lvx	v12, r5, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (32+1)*16
+	lvx	v12, r5, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (32+2)*16
+	lvx	v12, r5, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (32+3)*16
+	lvx	v12, r5, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (36+0)*16
+	lvx	v12, r5, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (36+1)*16
+	lvx	v12, r5, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (36+2)*16
+	lvx	v12, r5, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (36+3)*16
+	lvx	v12, r5, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (40+0)*16
+	lvx	v12, r5, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (40+1)*16
+	lvx	v12, r5, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (40+2)*16
+	lvx	v12, r5, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (40+3)*16
+	lvx	v12, r5, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (44+0)*16
+	lvx	v12, r5, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (44+1)*16
+	lvx	v12, r5, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (44+2)*16
+	lvx	v12, r5, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (44+3)*16
+	lvx	v12, r5, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (48+0)*16
+	lvx	v12, r5, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (48+1)*16
+	lvx	v12, r5, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (48+2)*16
+	lvx	v12, r5, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (48+3)*16
+	lvx	v12, r5, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (52+0)*16
+	lvx	v12, r5, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (52+1)*16
+	lvx	v12, r5, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (52+2)*16
+	lvx	v12, r5, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (52+3)*16
+	lvx	v12, r5, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (56+0)*16
+	lvx	v12, r5, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (56+1)*16
+	lvx	v12, r5, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (56+2)*16
+	lvx	v12, r5, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (56+3)*16
+	lvx	v12, r5, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (60+0)*16
+	lvx	v12, r5, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (60+1)*16
+	lvx	v12, r5, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (60+2)*16
+	lvx	v12, r5, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (60+3)*16
+	lvx	v12, r5, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
 	
 	lvx	v12, 0, r3
 	lvx	v13, r3, r7
@@ -1437,7 +10339,12 @@ _sha256d_ms_4way:
 	li	r10, 16*16
 	li	r11, 17*16
 	
-	sha256_4way_extend_setup
+	vspltisw	v0, 10
+	vspltisw	v1, -7
+	vspltisw	v16, 3
+	vspltisw	v17, 15
+	vspltisw	v18, 14
+	vspltisw	v19, 13
 	
 	addi	r4, r4, 2*16
 	addi	r12, r1, 4*4+18*16
@@ -1569,22 +10476,518 @@ _sha256d_ms_4way:
 	addi	r4, r4, -12*16
 	lvx	v11, 0, r4
 	
-	sha256_4way_extend_doubleround 16, r4, v6, v7, v4, v5
-	sha256_4way_extend_doubleround 18, r4, v8, v9, v6, v7
-	sha256_4way_extend_doubleround 20, r4, v10, v4, v8, v9
-	sha256_4way_extend_doubleround 22, r4, v5, v6, v10, v4
-	sha256_4way_extend_doubleround 24, r4, v7, v8, v5, v6
-	sha256_4way_extend_doubleround 26, r4, v9, v10, v7, v8
-	sha256_4way_extend_doubleround 28, r4, v4, v5, v9, v10
-	sha256_4way_extend_doubleround 30, r4, v6, v7, v4, v5
-	sha256_4way_extend_doubleround 32, r4, v8, v9, v6, v7
-	sha256_4way_extend_doubleround 34, r4, v10, v4, v8, v9
-	sha256_4way_extend_doubleround 36, r4, v5, v6, v10, v4
-	sha256_4way_extend_doubleround 38, r4, v7, v8, v5, v6
-	sha256_4way_extend_doubleround 40, r4, v9, v10, v7, v8
-	sha256_4way_extend_doubleround 42, r4, v4, v5, v9, v10
-	sha256_4way_extend_doubleround 44, r4, v6, v7, v4, v5
-	sha256_4way_extend_doubleround 46, r4, v8, v9, v6, v7
+	lvx	v14, r4, r7
+	vrlw	v12, v4, v17
+	vrlw	v13, v4, v19
+	vadduwm	v11, v11, v6
+	vxor	v12, v12, v13
+	vsrw	v13, v4, v0
+	vrlw	v6, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v6, v6, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r4, r8
+	vxor	v6, v6, v13
+	vrlw	v13, v5, v19
+	vadduwm	v6, v6, v12
+
+	vrlw	v12, v5, v17
+	vadduwm	v14, v14, v7
+	vxor	v12, v12, v13
+	vsrw	v13, v5, v0
+	vrlw	v7, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v6, r4, r10
+	vxor	v7, v7, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v7, v7, v13
+	vadduwm	v7, v7, v14
+	stvx	v7, r4, r11
+	addi	r4, r4, 2*16
+	lvx	v14, r4, r7
+	vrlw	v12, v6, v17
+	vrlw	v13, v6, v19
+	vadduwm	v11, v11, v8
+	vxor	v12, v12, v13
+	vsrw	v13, v6, v0
+	vrlw	v8, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v8, v8, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r4, r8
+	vxor	v8, v8, v13
+	vrlw	v13, v7, v19
+	vadduwm	v8, v8, v12
+
+	vrlw	v12, v7, v17
+	vadduwm	v14, v14, v9
+	vxor	v12, v12, v13
+	vsrw	v13, v7, v0
+	vrlw	v9, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v8, r4, r10
+	vxor	v9, v9, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v9, v9, v13
+	vadduwm	v9, v9, v14
+	stvx	v9, r4, r11
+	addi	r4, r4, 2*16
+	lvx	v14, r4, r7
+	vrlw	v12, v8, v17
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v10
+	vxor	v12, v12, v13
+	vsrw	v13, v8, v0
+	vrlw	v10, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v10, v10, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r4, r8
+	vxor	v10, v10, v13
+	vrlw	v13, v9, v19
+	vadduwm	v10, v10, v12
+
+	vrlw	v12, v9, v17
+	vadduwm	v14, v14, v4
+	vxor	v12, v12, v13
+	vsrw	v13, v9, v0
+	vrlw	v4, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v10, r4, r10
+	vxor	v4, v4, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v4, v4, v13
+	vadduwm	v4, v4, v14
+	stvx	v4, r4, r11
+	addi	r4, r4, 2*16
+	lvx	v14, r4, r7
+	vrlw	v12, v10, v17
+	vrlw	v13, v10, v19
+	vadduwm	v11, v11, v5
+	vxor	v12, v12, v13
+	vsrw	v13, v10, v0
+	vrlw	v5, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v5, v5, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r4, r8
+	vxor	v5, v5, v13
+	vrlw	v13, v4, v19
+	vadduwm	v5, v5, v12
+
+	vrlw	v12, v4, v17
+	vadduwm	v14, v14, v6
+	vxor	v12, v12, v13
+	vsrw	v13, v4, v0
+	vrlw	v6, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v5, r4, r10
+	vxor	v6, v6, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v6, v6, v13
+	vadduwm	v6, v6, v14
+	stvx	v6, r4, r11
+	addi	r4, r4, 2*16
+	lvx	v14, r4, r7
+	vrlw	v12, v5, v17
+	vrlw	v13, v5, v19
+	vadduwm	v11, v11, v7
+	vxor	v12, v12, v13
+	vsrw	v13, v5, v0
+	vrlw	v7, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v7, v7, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r4, r8
+	vxor	v7, v7, v13
+	vrlw	v13, v6, v19
+	vadduwm	v7, v7, v12
+
+	vrlw	v12, v6, v17
+	vadduwm	v14, v14, v8
+	vxor	v12, v12, v13
+	vsrw	v13, v6, v0
+	vrlw	v8, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v7, r4, r10
+	vxor	v8, v8, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v8, v8, v13
+	vadduwm	v8, v8, v14
+	stvx	v8, r4, r11
+	addi	r4, r4, 2*16
+	lvx	v14, r4, r7
+	vrlw	v12, v7, v17
+	vrlw	v13, v7, v19
+	vadduwm	v11, v11, v9
+	vxor	v12, v12, v13
+	vsrw	v13, v7, v0
+	vrlw	v9, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v9, v9, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r4, r8
+	vxor	v9, v9, v13
+	vrlw	v13, v8, v19
+	vadduwm	v9, v9, v12
+
+	vrlw	v12, v8, v17
+	vadduwm	v14, v14, v10
+	vxor	v12, v12, v13
+	vsrw	v13, v8, v0
+	vrlw	v10, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v9, r4, r10
+	vxor	v10, v10, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v10, v10, v13
+	vadduwm	v10, v10, v14
+	stvx	v10, r4, r11
+	addi	r4, r4, 2*16
+	lvx	v14, r4, r7
+	vrlw	v12, v9, v17
+	vrlw	v13, v9, v19
+	vadduwm	v11, v11, v4
+	vxor	v12, v12, v13
+	vsrw	v13, v9, v0
+	vrlw	v4, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v4, v4, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r4, r8
+	vxor	v4, v4, v13
+	vrlw	v13, v10, v19
+	vadduwm	v4, v4, v12
+
+	vrlw	v12, v10, v17
+	vadduwm	v14, v14, v5
+	vxor	v12, v12, v13
+	vsrw	v13, v10, v0
+	vrlw	v5, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v4, r4, r10
+	vxor	v5, v5, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v5, v5, v13
+	vadduwm	v5, v5, v14
+	stvx	v5, r4, r11
+	addi	r4, r4, 2*16
+	lvx	v14, r4, r7
+	vrlw	v12, v4, v17
+	vrlw	v13, v4, v19
+	vadduwm	v11, v11, v6
+	vxor	v12, v12, v13
+	vsrw	v13, v4, v0
+	vrlw	v6, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v6, v6, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r4, r8
+	vxor	v6, v6, v13
+	vrlw	v13, v5, v19
+	vadduwm	v6, v6, v12
+
+	vrlw	v12, v5, v17
+	vadduwm	v14, v14, v7
+	vxor	v12, v12, v13
+	vsrw	v13, v5, v0
+	vrlw	v7, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v6, r4, r10
+	vxor	v7, v7, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v7, v7, v13
+	vadduwm	v7, v7, v14
+	stvx	v7, r4, r11
+	addi	r4, r4, 2*16
+	lvx	v14, r4, r7
+	vrlw	v12, v6, v17
+	vrlw	v13, v6, v19
+	vadduwm	v11, v11, v8
+	vxor	v12, v12, v13
+	vsrw	v13, v6, v0
+	vrlw	v8, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v8, v8, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r4, r8
+	vxor	v8, v8, v13
+	vrlw	v13, v7, v19
+	vadduwm	v8, v8, v12
+
+	vrlw	v12, v7, v17
+	vadduwm	v14, v14, v9
+	vxor	v12, v12, v13
+	vsrw	v13, v7, v0
+	vrlw	v9, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v8, r4, r10
+	vxor	v9, v9, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v9, v9, v13
+	vadduwm	v9, v9, v14
+	stvx	v9, r4, r11
+	addi	r4, r4, 2*16
+	lvx	v14, r4, r7
+	vrlw	v12, v8, v17
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v10
+	vxor	v12, v12, v13
+	vsrw	v13, v8, v0
+	vrlw	v10, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v10, v10, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r4, r8
+	vxor	v10, v10, v13
+	vrlw	v13, v9, v19
+	vadduwm	v10, v10, v12
+
+	vrlw	v12, v9, v17
+	vadduwm	v14, v14, v4
+	vxor	v12, v12, v13
+	vsrw	v13, v9, v0
+	vrlw	v4, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v10, r4, r10
+	vxor	v4, v4, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v4, v4, v13
+	vadduwm	v4, v4, v14
+	stvx	v4, r4, r11
+	addi	r4, r4, 2*16
+	lvx	v14, r4, r7
+	vrlw	v12, v10, v17
+	vrlw	v13, v10, v19
+	vadduwm	v11, v11, v5
+	vxor	v12, v12, v13
+	vsrw	v13, v10, v0
+	vrlw	v5, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v5, v5, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r4, r8
+	vxor	v5, v5, v13
+	vrlw	v13, v4, v19
+	vadduwm	v5, v5, v12
+
+	vrlw	v12, v4, v17
+	vadduwm	v14, v14, v6
+	vxor	v12, v12, v13
+	vsrw	v13, v4, v0
+	vrlw	v6, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v5, r4, r10
+	vxor	v6, v6, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v6, v6, v13
+	vadduwm	v6, v6, v14
+	stvx	v6, r4, r11
+	addi	r4, r4, 2*16
+	lvx	v14, r4, r7
+	vrlw	v12, v5, v17
+	vrlw	v13, v5, v19
+	vadduwm	v11, v11, v7
+	vxor	v12, v12, v13
+	vsrw	v13, v5, v0
+	vrlw	v7, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v7, v7, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r4, r8
+	vxor	v7, v7, v13
+	vrlw	v13, v6, v19
+	vadduwm	v7, v7, v12
+
+	vrlw	v12, v6, v17
+	vadduwm	v14, v14, v8
+	vxor	v12, v12, v13
+	vsrw	v13, v6, v0
+	vrlw	v8, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v7, r4, r10
+	vxor	v8, v8, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v8, v8, v13
+	vadduwm	v8, v8, v14
+	stvx	v8, r4, r11
+	addi	r4, r4, 2*16
+	lvx	v14, r4, r7
+	vrlw	v12, v7, v17
+	vrlw	v13, v7, v19
+	vadduwm	v11, v11, v9
+	vxor	v12, v12, v13
+	vsrw	v13, v7, v0
+	vrlw	v9, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v9, v9, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r4, r8
+	vxor	v9, v9, v13
+	vrlw	v13, v8, v19
+	vadduwm	v9, v9, v12
+
+	vrlw	v12, v8, v17
+	vadduwm	v14, v14, v10
+	vxor	v12, v12, v13
+	vsrw	v13, v8, v0
+	vrlw	v10, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v9, r4, r10
+	vxor	v10, v10, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v10, v10, v13
+	vadduwm	v10, v10, v14
+	stvx	v10, r4, r11
+	addi	r4, r4, 2*16
+	lvx	v14, r4, r7
+	vrlw	v12, v9, v17
+	vrlw	v13, v9, v19
+	vadduwm	v11, v11, v4
+	vxor	v12, v12, v13
+	vsrw	v13, v9, v0
+	vrlw	v4, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v4, v4, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r4, r8
+	vxor	v4, v4, v13
+	vrlw	v13, v10, v19
+	vadduwm	v4, v4, v12
+
+	vrlw	v12, v10, v17
+	vadduwm	v14, v14, v5
+	vxor	v12, v12, v13
+	vsrw	v13, v10, v0
+	vrlw	v5, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v4, r4, r10
+	vxor	v5, v5, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v5, v5, v13
+	vadduwm	v5, v5, v14
+	stvx	v5, r4, r11
+	addi	r4, r4, 2*16
+	lvx	v14, r4, r7
+	vrlw	v12, v4, v17
+	vrlw	v13, v4, v19
+	vadduwm	v11, v11, v6
+	vxor	v12, v12, v13
+	vsrw	v13, v4, v0
+	vrlw	v6, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v6, v6, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r4, r8
+	vxor	v6, v6, v13
+	vrlw	v13, v5, v19
+	vadduwm	v6, v6, v12
+
+	vrlw	v12, v5, v17
+	vadduwm	v14, v14, v7
+	vxor	v12, v12, v13
+	vsrw	v13, v5, v0
+	vrlw	v7, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v6, r4, r10
+	vxor	v7, v7, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v7, v7, v13
+	vadduwm	v7, v7, v14
+	stvx	v7, r4, r11
+	addi	r4, r4, 2*16
+	lvx	v14, r4, r7
+	vrlw	v12, v6, v17
+	vrlw	v13, v6, v19
+	vadduwm	v11, v11, v8
+	vxor	v12, v12, v13
+	vsrw	v13, v6, v0
+	vrlw	v8, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v8, v8, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r4, r8
+	vxor	v8, v8, v13
+	vrlw	v13, v7, v19
+	vadduwm	v8, v8, v12
+
+	vrlw	v12, v7, v17
+	vadduwm	v14, v14, v9
+	vxor	v12, v12, v13
+	vsrw	v13, v7, v0
+	vrlw	v9, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v8, r4, r10
+	vxor	v9, v9, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v9, v9, v13
+	vadduwm	v9, v9, v14
+	stvx	v9, r4, r11
+	addi	r4, r4, 2*16
 	addi	r4, r4, -48*16
 	
 	lvx	v4, 0, r6
@@ -1602,23 +11005,1719 @@ _sha256d_ms_4way:
 	lis	r12, HI(sha256_4k)
 	addi	r12, r12, LO(sha256_4k)
 #endif
-	sha256_4way_main_setup
-	sha256_4way_main_round  3, r12, r4, v5, v6, v7, v4, v9, v10, v11, v8
-	sha256_4way_main_quadround  4, r12, r4
-	sha256_4way_main_quadround  8, r12, r4
-	sha256_4way_main_quadround 12, r12, r4
-	sha256_4way_main_quadround 16, r12, r4
-	sha256_4way_main_quadround 20, r12, r4
-	sha256_4way_main_quadround 24, r12, r4
-	sha256_4way_main_quadround 28, r12, r4
-	sha256_4way_main_quadround 32, r12, r4
-	sha256_4way_main_quadround 36, r12, r4
-	sha256_4way_main_quadround 40, r12, r4
-	sha256_4way_main_quadround 44, r12, r4
-	sha256_4way_main_quadround 48, r12, r4
-	sha256_4way_main_quadround 52, r12, r4
-	sha256_4way_main_quadround 56, r12, r4
-	sha256_4way_main_quadround 60, r12, r4
+	vspltisw	v2, 12
+	vspltisw	v3, -5
+	vspltisw	v16, -6
+	vspltisw	v17, -11
+	vspltisw	v18, -2
+	li	r6, (3)*16
+	lvx	v12, r4, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (4+0)*16
+	lvx	v12, r4, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (4+1)*16
+	lvx	v12, r4, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (4+2)*16
+	lvx	v12, r4, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (4+3)*16
+	lvx	v12, r4, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (8+0)*16
+	lvx	v12, r4, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (8+1)*16
+	lvx	v12, r4, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (8+2)*16
+	lvx	v12, r4, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (8+3)*16
+	lvx	v12, r4, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (12+0)*16
+	lvx	v12, r4, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (12+1)*16
+	lvx	v12, r4, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (12+2)*16
+	lvx	v12, r4, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (12+3)*16
+	lvx	v12, r4, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (16+0)*16
+	lvx	v12, r4, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (16+1)*16
+	lvx	v12, r4, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (16+2)*16
+	lvx	v12, r4, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (16+3)*16
+	lvx	v12, r4, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (20+0)*16
+	lvx	v12, r4, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (20+1)*16
+	lvx	v12, r4, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (20+2)*16
+	lvx	v12, r4, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (20+3)*16
+	lvx	v12, r4, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (24+0)*16
+	lvx	v12, r4, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (24+1)*16
+	lvx	v12, r4, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (24+2)*16
+	lvx	v12, r4, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (24+3)*16
+	lvx	v12, r4, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (28+0)*16
+	lvx	v12, r4, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (28+1)*16
+	lvx	v12, r4, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (28+2)*16
+	lvx	v12, r4, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (28+3)*16
+	lvx	v12, r4, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (32+0)*16
+	lvx	v12, r4, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (32+1)*16
+	lvx	v12, r4, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (32+2)*16
+	lvx	v12, r4, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (32+3)*16
+	lvx	v12, r4, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (36+0)*16
+	lvx	v12, r4, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (36+1)*16
+	lvx	v12, r4, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (36+2)*16
+	lvx	v12, r4, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (36+3)*16
+	lvx	v12, r4, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (40+0)*16
+	lvx	v12, r4, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (40+1)*16
+	lvx	v12, r4, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (40+2)*16
+	lvx	v12, r4, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (40+3)*16
+	lvx	v12, r4, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (44+0)*16
+	lvx	v12, r4, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (44+1)*16
+	lvx	v12, r4, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (44+2)*16
+	lvx	v12, r4, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (44+3)*16
+	lvx	v12, r4, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (48+0)*16
+	lvx	v12, r4, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (48+1)*16
+	lvx	v12, r4, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (48+2)*16
+	lvx	v12, r4, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (48+3)*16
+	lvx	v12, r4, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (52+0)*16
+	lvx	v12, r4, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (52+1)*16
+	lvx	v12, r4, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (52+2)*16
+	lvx	v12, r4, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (52+3)*16
+	lvx	v12, r4, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (56+0)*16
+	lvx	v12, r4, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (56+1)*16
+	lvx	v12, r4, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (56+2)*16
+	lvx	v12, r4, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (56+3)*16
+	lvx	v12, r4, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (60+0)*16
+	lvx	v12, r4, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (60+1)*16
+	lvx	v12, r4, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (60+2)*16
+	lvx	v12, r4, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (60+3)*16
+	lvx	v12, r4, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
 	
 	lvx	v12, 0, r5
 	lvx	v13, r5, r7
@@ -1672,7 +12771,12 @@ _sha256d_ms_4way:
 	
 	addi	r4, r1, 4*4
 	
-	sha256_4way_extend_setup
+	vspltisw	v0, 10
+	vspltisw	v1, -7
+	vspltisw	v16, 3
+	vspltisw	v17, 15
+	vspltisw	v18, 14
+	vspltisw	v19, 13
 	
 #ifdef _AIX
 	ld	r12, T.sha256d_4preext2(r2)
@@ -1885,20 +12989,454 @@ _sha256d_ms_4way:
 	stvx	v5, r4, r11
 	addi	r4, r4, 2*16
 	
-	sha256_4way_extend_doubleround 16, r4, v6, v7, v4, v5
-	sha256_4way_extend_doubleround 18, r4, v8, v9, v6, v7
-	sha256_4way_extend_doubleround 20, r4, v10, v4, v8, v9
-	sha256_4way_extend_doubleround 22, r4, v5, v6, v10, v4
-	sha256_4way_extend_doubleround 24, r4, v7, v8, v5, v6
-	sha256_4way_extend_doubleround 26, r4, v9, v10, v7, v8
-	sha256_4way_extend_doubleround 28, r4, v4, v5, v9, v10
-	sha256_4way_extend_doubleround 30, r4, v6, v7, v4, v5
-	sha256_4way_extend_doubleround 32, r4, v8, v9, v6, v7
-	sha256_4way_extend_doubleround 34, r4, v10, v4, v8, v9
-	sha256_4way_extend_doubleround 36, r4, v5, v6, v10, v4
-	sha256_4way_extend_doubleround 38, r4, v7, v8, v5, v6
-	sha256_4way_extend_doubleround 40, r4, v9, v10, v7, v8
-	sha256_4way_extend_doubleround 42, r4, v4, v5, v9, v10
+	lvx	v14, r4, r7
+	vrlw	v12, v4, v17
+	vrlw	v13, v4, v19
+	vadduwm	v11, v11, v6
+	vxor	v12, v12, v13
+	vsrw	v13, v4, v0
+	vrlw	v6, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v6, v6, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r4, r8
+	vxor	v6, v6, v13
+	vrlw	v13, v5, v19
+	vadduwm	v6, v6, v12
+
+	vrlw	v12, v5, v17
+	vadduwm	v14, v14, v7
+	vxor	v12, v12, v13
+	vsrw	v13, v5, v0
+	vrlw	v7, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v6, r4, r10
+	vxor	v7, v7, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v7, v7, v13
+	vadduwm	v7, v7, v14
+	stvx	v7, r4, r11
+	addi	r4, r4, 2*16
+	lvx	v14, r4, r7
+	vrlw	v12, v6, v17
+	vrlw	v13, v6, v19
+	vadduwm	v11, v11, v8
+	vxor	v12, v12, v13
+	vsrw	v13, v6, v0
+	vrlw	v8, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v8, v8, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r4, r8
+	vxor	v8, v8, v13
+	vrlw	v13, v7, v19
+	vadduwm	v8, v8, v12
+
+	vrlw	v12, v7, v17
+	vadduwm	v14, v14, v9
+	vxor	v12, v12, v13
+	vsrw	v13, v7, v0
+	vrlw	v9, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v8, r4, r10
+	vxor	v9, v9, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v9, v9, v13
+	vadduwm	v9, v9, v14
+	stvx	v9, r4, r11
+	addi	r4, r4, 2*16
+	lvx	v14, r4, r7
+	vrlw	v12, v8, v17
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v10
+	vxor	v12, v12, v13
+	vsrw	v13, v8, v0
+	vrlw	v10, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v10, v10, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r4, r8
+	vxor	v10, v10, v13
+	vrlw	v13, v9, v19
+	vadduwm	v10, v10, v12
+
+	vrlw	v12, v9, v17
+	vadduwm	v14, v14, v4
+	vxor	v12, v12, v13
+	vsrw	v13, v9, v0
+	vrlw	v4, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v10, r4, r10
+	vxor	v4, v4, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v4, v4, v13
+	vadduwm	v4, v4, v14
+	stvx	v4, r4, r11
+	addi	r4, r4, 2*16
+	lvx	v14, r4, r7
+	vrlw	v12, v10, v17
+	vrlw	v13, v10, v19
+	vadduwm	v11, v11, v5
+	vxor	v12, v12, v13
+	vsrw	v13, v10, v0
+	vrlw	v5, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v5, v5, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r4, r8
+	vxor	v5, v5, v13
+	vrlw	v13, v4, v19
+	vadduwm	v5, v5, v12
+
+	vrlw	v12, v4, v17
+	vadduwm	v14, v14, v6
+	vxor	v12, v12, v13
+	vsrw	v13, v4, v0
+	vrlw	v6, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v5, r4, r10
+	vxor	v6, v6, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v6, v6, v13
+	vadduwm	v6, v6, v14
+	stvx	v6, r4, r11
+	addi	r4, r4, 2*16
+	lvx	v14, r4, r7
+	vrlw	v12, v5, v17
+	vrlw	v13, v5, v19
+	vadduwm	v11, v11, v7
+	vxor	v12, v12, v13
+	vsrw	v13, v5, v0
+	vrlw	v7, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v7, v7, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r4, r8
+	vxor	v7, v7, v13
+	vrlw	v13, v6, v19
+	vadduwm	v7, v7, v12
+
+	vrlw	v12, v6, v17
+	vadduwm	v14, v14, v8
+	vxor	v12, v12, v13
+	vsrw	v13, v6, v0
+	vrlw	v8, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v7, r4, r10
+	vxor	v8, v8, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v8, v8, v13
+	vadduwm	v8, v8, v14
+	stvx	v8, r4, r11
+	addi	r4, r4, 2*16
+	lvx	v14, r4, r7
+	vrlw	v12, v7, v17
+	vrlw	v13, v7, v19
+	vadduwm	v11, v11, v9
+	vxor	v12, v12, v13
+	vsrw	v13, v7, v0
+	vrlw	v9, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v9, v9, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r4, r8
+	vxor	v9, v9, v13
+	vrlw	v13, v8, v19
+	vadduwm	v9, v9, v12
+
+	vrlw	v12, v8, v17
+	vadduwm	v14, v14, v10
+	vxor	v12, v12, v13
+	vsrw	v13, v8, v0
+	vrlw	v10, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v9, r4, r10
+	vxor	v10, v10, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v10, v10, v13
+	vadduwm	v10, v10, v14
+	stvx	v10, r4, r11
+	addi	r4, r4, 2*16
+	lvx	v14, r4, r7
+	vrlw	v12, v9, v17
+	vrlw	v13, v9, v19
+	vadduwm	v11, v11, v4
+	vxor	v12, v12, v13
+	vsrw	v13, v9, v0
+	vrlw	v4, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v4, v4, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r4, r8
+	vxor	v4, v4, v13
+	vrlw	v13, v10, v19
+	vadduwm	v4, v4, v12
+
+	vrlw	v12, v10, v17
+	vadduwm	v14, v14, v5
+	vxor	v12, v12, v13
+	vsrw	v13, v10, v0
+	vrlw	v5, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v4, r4, r10
+	vxor	v5, v5, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v5, v5, v13
+	vadduwm	v5, v5, v14
+	stvx	v5, r4, r11
+	addi	r4, r4, 2*16
+	lvx	v14, r4, r7
+	vrlw	v12, v4, v17
+	vrlw	v13, v4, v19
+	vadduwm	v11, v11, v6
+	vxor	v12, v12, v13
+	vsrw	v13, v4, v0
+	vrlw	v6, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v6, v6, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r4, r8
+	vxor	v6, v6, v13
+	vrlw	v13, v5, v19
+	vadduwm	v6, v6, v12
+
+	vrlw	v12, v5, v17
+	vadduwm	v14, v14, v7
+	vxor	v12, v12, v13
+	vsrw	v13, v5, v0
+	vrlw	v7, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v6, r4, r10
+	vxor	v7, v7, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v7, v7, v13
+	vadduwm	v7, v7, v14
+	stvx	v7, r4, r11
+	addi	r4, r4, 2*16
+	lvx	v14, r4, r7
+	vrlw	v12, v6, v17
+	vrlw	v13, v6, v19
+	vadduwm	v11, v11, v8
+	vxor	v12, v12, v13
+	vsrw	v13, v6, v0
+	vrlw	v8, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v8, v8, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r4, r8
+	vxor	v8, v8, v13
+	vrlw	v13, v7, v19
+	vadduwm	v8, v8, v12
+
+	vrlw	v12, v7, v17
+	vadduwm	v14, v14, v9
+	vxor	v12, v12, v13
+	vsrw	v13, v7, v0
+	vrlw	v9, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v8, r4, r10
+	vxor	v9, v9, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v9, v9, v13
+	vadduwm	v9, v9, v14
+	stvx	v9, r4, r11
+	addi	r4, r4, 2*16
+	lvx	v14, r4, r7
+	vrlw	v12, v8, v17
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v10
+	vxor	v12, v12, v13
+	vsrw	v13, v8, v0
+	vrlw	v10, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v10, v10, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r4, r8
+	vxor	v10, v10, v13
+	vrlw	v13, v9, v19
+	vadduwm	v10, v10, v12
+
+	vrlw	v12, v9, v17
+	vadduwm	v14, v14, v4
+	vxor	v12, v12, v13
+	vsrw	v13, v9, v0
+	vrlw	v4, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v10, r4, r10
+	vxor	v4, v4, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v4, v4, v13
+	vadduwm	v4, v4, v14
+	stvx	v4, r4, r11
+	addi	r4, r4, 2*16
+	lvx	v14, r4, r7
+	vrlw	v12, v10, v17
+	vrlw	v13, v10, v19
+	vadduwm	v11, v11, v5
+	vxor	v12, v12, v13
+	vsrw	v13, v10, v0
+	vrlw	v5, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v5, v5, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r4, r8
+	vxor	v5, v5, v13
+	vrlw	v13, v4, v19
+	vadduwm	v5, v5, v12
+
+	vrlw	v12, v4, v17
+	vadduwm	v14, v14, v6
+	vxor	v12, v12, v13
+	vsrw	v13, v4, v0
+	vrlw	v6, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v5, r4, r10
+	vxor	v6, v6, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v6, v6, v13
+	vadduwm	v6, v6, v14
+	stvx	v6, r4, r11
+	addi	r4, r4, 2*16
+	lvx	v14, r4, r7
+	vrlw	v12, v5, v17
+	vrlw	v13, v5, v19
+	vadduwm	v11, v11, v7
+	vxor	v12, v12, v13
+	vsrw	v13, v5, v0
+	vrlw	v7, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v7, v7, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r4, r8
+	vxor	v7, v7, v13
+	vrlw	v13, v6, v19
+	vadduwm	v7, v7, v12
+
+	vrlw	v12, v6, v17
+	vadduwm	v14, v14, v8
+	vxor	v12, v12, v13
+	vsrw	v13, v6, v0
+	vrlw	v8, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v7, r4, r10
+	vxor	v8, v8, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v8, v8, v13
+	vadduwm	v8, v8, v14
+	stvx	v8, r4, r11
+	addi	r4, r4, 2*16
+	lvx	v14, r4, r7
+	vrlw	v12, v7, v17
+	vrlw	v13, v7, v19
+	vadduwm	v11, v11, v9
+	vxor	v12, v12, v13
+	vsrw	v13, v7, v0
+	vrlw	v9, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v9, v9, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r4, r8
+	vxor	v9, v9, v13
+	vrlw	v13, v8, v19
+	vadduwm	v9, v9, v12
+
+	vrlw	v12, v8, v17
+	vadduwm	v14, v14, v10
+	vxor	v12, v12, v13
+	vsrw	v13, v8, v0
+	vrlw	v10, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v9, r4, r10
+	vxor	v10, v10, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v10, v10, v13
+	vadduwm	v10, v10, v14
+	stvx	v10, r4, r11
+	addi	r4, r4, 2*16
+	lvx	v14, r4, r7
+	vrlw	v12, v9, v17
+	vrlw	v13, v9, v19
+	vadduwm	v11, v11, v4
+	vxor	v12, v12, v13
+	vsrw	v13, v9, v0
+	vrlw	v4, v14, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v14, v18
+	vadduwm	v12, v12, v11
+	vxor	v4, v4, v13
+	vsrw	v13, v14, v16
+	lvx	v11, r4, r8
+	vxor	v4, v4, v13
+	vrlw	v13, v10, v19
+	vadduwm	v4, v4, v12
+
+	vrlw	v12, v10, v17
+	vadduwm	v14, v14, v5
+	vxor	v12, v12, v13
+	vsrw	v13, v10, v0
+	vrlw	v5, v11, v1
+	vxor	v12, v12, v13
+	vrlw	v13, v11, v18
+	stvx	v4, r4, r10
+	vxor	v5, v5, v13
+	vsrw	v13, v11, v16
+	vadduwm	v14, v14, v12
+	vxor	v5, v5, v13
+	vadduwm	v5, v5, v14
+	stvx	v5, r4, r11
+	addi	r4, r4, 2*16
 	
 	lvx	v14, r4, r7
 	vrlw	v12, v4, v17
@@ -1938,46 +13476,1673 @@ _sha256d_ms_4way:
 	lis	r12, HI(sha256_4k)
 	addi	r12, r12, LO(sha256_4k)
 #endif
-	sha256_4way_main_setup
-	sha256_4way_main_quadround  0, r12, r4
-	sha256_4way_main_quadround  4, r12, r4
-	sha256_4way_main_quadround  8, r12, r4
-	sha256_4way_main_quadround 12, r12, r4
-	sha256_4way_main_quadround 16, r12, r4
-	sha256_4way_main_quadround 20, r12, r4
-	sha256_4way_main_quadround 24, r12, r4
-	sha256_4way_main_quadround 28, r12, r4
-	sha256_4way_main_quadround 32, r12, r4
-	sha256_4way_main_quadround 36, r12, r4
-	sha256_4way_main_quadround 40, r12, r4
-	sha256_4way_main_quadround 44, r12, r4
-	sha256_4way_main_quadround 48, r12, r4
-	sha256_4way_main_quadround 52, r12, r4
-	sha256_4way_main_round 56, r12, r4, v4, v5, v6, v7, v8, v9, v10, v11
-
-.macro sha256_4way_main_round_red i, rk, rw, vd, ve, vf, vg, vh
-	li	r6, (\i)*16
-	vand	v15, \vf, \ve
-	vandc	v14, \vg, \ve
-	lvx	v12, \rw, r6
-	vadduwm	\vh, \vh, \vd
-	vor	v14, v14, v15
-	lvx	v15, \rk, r6
-	vrlw	v13, \ve, v3
-	vadduwm	\vh, \vh, v14
-	vxor	v14, \ve, v13
-	vrlw	v13, \ve, v19
-	vadduwm	\vh, \vh, v12
+	vspltisw	v2, 12
+	vspltisw	v3, -5
+	vspltisw	v16, -6
+	vspltisw	v17, -11
+	vspltisw	v18, -2
+	li	r6, (0+0)*16
+	lvx	v12, r4, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
 	vxor	v14, v14, v13
-	vadduwm	\vh, \vh, v15
+	vadduwm	v11, v11, v15
 	vrlw	v13, v14, v16
-	vadduwm	\vh, \vh, v13
-.endm
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
 
-	sha256_4way_main_round_red 57, r12, r4, v6, v11, v8, v9, v10
-	sha256_4way_main_round_red 58, r12, r4, v5, v10, v11, v8, v9
-	sha256_4way_main_round_red 59, r12, r4, v4, v9, v10, v11, v8
-	sha256_4way_main_round_red 60, r12, r4, v7, v8, v9, v10, v11
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (0+1)*16
+	lvx	v12, r4, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (0+2)*16
+	lvx	v12, r4, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (0+3)*16
+	lvx	v12, r4, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (4+0)*16
+	lvx	v12, r4, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (4+1)*16
+	lvx	v12, r4, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (4+2)*16
+	lvx	v12, r4, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (4+3)*16
+	lvx	v12, r4, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (8+0)*16
+	lvx	v12, r4, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (8+1)*16
+	lvx	v12, r4, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (8+2)*16
+	lvx	v12, r4, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (8+3)*16
+	lvx	v12, r4, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (12+0)*16
+	lvx	v12, r4, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (12+1)*16
+	lvx	v12, r4, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (12+2)*16
+	lvx	v12, r4, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (12+3)*16
+	lvx	v12, r4, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (16+0)*16
+	lvx	v12, r4, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (16+1)*16
+	lvx	v12, r4, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (16+2)*16
+	lvx	v12, r4, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (16+3)*16
+	lvx	v12, r4, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (20+0)*16
+	lvx	v12, r4, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (20+1)*16
+	lvx	v12, r4, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (20+2)*16
+	lvx	v12, r4, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (20+3)*16
+	lvx	v12, r4, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (24+0)*16
+	lvx	v12, r4, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (24+1)*16
+	lvx	v12, r4, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (24+2)*16
+	lvx	v12, r4, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (24+3)*16
+	lvx	v12, r4, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (28+0)*16
+	lvx	v12, r4, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (28+1)*16
+	lvx	v12, r4, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (28+2)*16
+	lvx	v12, r4, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (28+3)*16
+	lvx	v12, r4, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (32+0)*16
+	lvx	v12, r4, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (32+1)*16
+	lvx	v12, r4, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (32+2)*16
+	lvx	v12, r4, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (32+3)*16
+	lvx	v12, r4, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (36+0)*16
+	lvx	v12, r4, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (36+1)*16
+	lvx	v12, r4, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (36+2)*16
+	lvx	v12, r4, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (36+3)*16
+	lvx	v12, r4, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (40+0)*16
+	lvx	v12, r4, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (40+1)*16
+	lvx	v12, r4, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (40+2)*16
+	lvx	v12, r4, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (40+3)*16
+	lvx	v12, r4, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (44+0)*16
+	lvx	v12, r4, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (44+1)*16
+	lvx	v12, r4, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (44+2)*16
+	lvx	v12, r4, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (44+3)*16
+	lvx	v12, r4, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (48+0)*16
+	lvx	v12, r4, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (48+1)*16
+	lvx	v12, r4, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (48+2)*16
+	lvx	v12, r4, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (48+3)*16
+	lvx	v12, r4, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (52+0)*16
+	lvx	v12, r4, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+	li	r6, (52+1)*16
+	lvx	v12, r4, r6
+	vand	v13, v8, v11
+	vandc	v14, v9, v11
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v7, v4
+	vadduwm	v10, v10, v13
+
+	vrlw	v13, v7, v17
+	vand	v15, v15, v5
+	vxor	v12, v7, v13
+	vrlw	v13, v7, v2
+	vand	v14, v7, v4
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v10, v14
+	vadduwm	v10, v10, v6
+	vadduwm	v6, v15, v13
+	li	r6, (52+2)*16
+	lvx	v12, r4, r6
+	vand	v13, v11, v10
+	vandc	v14, v8, v10
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v6, v7
+	vadduwm	v9, v9, v13
+
+	vrlw	v13, v6, v17
+	vand	v15, v15, v4
+	vxor	v12, v6, v13
+	vrlw	v13, v6, v2
+	vand	v14, v6, v7
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v9, v14
+	vadduwm	v9, v9, v5
+	vadduwm	v5, v15, v13
+	li	r6, (52+3)*16
+	lvx	v12, r4, r6
+	vand	v13, v10, v9
+	vandc	v14, v11, v9
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v5, v6
+	vadduwm	v8, v8, v13
+
+	vrlw	v13, v5, v17
+	vand	v15, v15, v7
+	vxor	v12, v5, v13
+	vrlw	v13, v5, v2
+	vand	v14, v5, v6
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v8, v14
+	vadduwm	v8, v8, v4
+	vadduwm	v4, v15, v13
+	li	r6, (56)*16
+	lvx	v12, r4, r6
+	vand	v13, v9, v8
+	vandc	v14, v10, v8
+	lvx	v15, r12, r6
+	vor	v14, v14, v13
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vxor	v15, v4, v5
+	vadduwm	v11, v11, v13
+
+	vrlw	v13, v4, v17
+	vand	v15, v15, v6
+	vxor	v12, v4, v13
+	vrlw	v13, v4, v2
+	vand	v14, v4, v5
+	vxor	v12, v12, v13
+	vxor	v14, v14, v15
+	vrlw	v13, v12, v18
+	vadduwm	v15, v11, v14
+	vadduwm	v11, v11, v7
+	vadduwm	v7, v15, v13
+
+
+	li	r6, (57)*16
+	vand	v15, v8, v11
+	vandc	v14, v9, v11
+	lvx	v12, r4, r6
+	vadduwm	v10, v10, v6
+	vor	v14, v14, v15
+	lvx	v15, r12, r6
+	vrlw	v13, v11, v3
+	vadduwm	v10, v10, v14
+	vxor	v14, v11, v13
+	vrlw	v13, v11, v19
+	vadduwm	v10, v10, v12
+	vxor	v14, v14, v13
+	vadduwm	v10, v10, v15
+	vrlw	v13, v14, v16
+	vadduwm	v10, v10, v13
+	li	r6, (58)*16
+	vand	v15, v11, v10
+	vandc	v14, v8, v10
+	lvx	v12, r4, r6
+	vadduwm	v9, v9, v5
+	vor	v14, v14, v15
+	lvx	v15, r12, r6
+	vrlw	v13, v10, v3
+	vadduwm	v9, v9, v14
+	vxor	v14, v10, v13
+	vrlw	v13, v10, v19
+	vadduwm	v9, v9, v12
+	vxor	v14, v14, v13
+	vadduwm	v9, v9, v15
+	vrlw	v13, v14, v16
+	vadduwm	v9, v9, v13
+	li	r6, (59)*16
+	vand	v15, v10, v9
+	vandc	v14, v11, v9
+	lvx	v12, r4, r6
+	vadduwm	v8, v8, v4
+	vor	v14, v14, v15
+	lvx	v15, r12, r6
+	vrlw	v13, v9, v3
+	vadduwm	v8, v8, v14
+	vxor	v14, v9, v13
+	vrlw	v13, v9, v19
+	vadduwm	v8, v8, v12
+	vxor	v14, v14, v13
+	vadduwm	v8, v8, v15
+	vrlw	v13, v14, v16
+	vadduwm	v8, v8, v13
+	li	r6, (60)*16
+	vand	v15, v9, v8
+	vandc	v14, v10, v8
+	lvx	v12, r4, r6
+	vadduwm	v11, v11, v7
+	vor	v14, v14, v15
+	lvx	v15, r12, r6
+	vrlw	v13, v8, v3
+	vadduwm	v11, v11, v14
+	vxor	v14, v8, v13
+	vrlw	v13, v8, v19
+	vadduwm	v11, v11, v12
+	vxor	v14, v14, v13
+	vadduwm	v11, v11, v15
+	vrlw	v13, v14, v16
+	vadduwm	v11, v11, v13
 	
 	li	r12, 7*16
 	lvx	v19, r5, r12

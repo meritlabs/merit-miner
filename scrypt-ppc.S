@@ -98,52 +98,7 @@
 	.machine ppc7400
 #endif
 
-.macro salsa8_core_doubleround
-	vadduwm	v4, v0, v1
-	vrlw	v4, v4, v16
-	vxor	v3, v3, v4
-	
-	vadduwm	v4, v3, v0
-	vrlw	v4, v4, v17
-	vxor	v2, v2, v4
-	
-	vadduwm	v4, v2, v3
-	vrlw	v4, v4, v18
-	vsldoi	v3, v3, v3, 12
-	vxor	v1, v1, v4
-	
-	vadduwm	v4, v1, v2
-	vrlw	v4, v4, v19
-	vsldoi	v1, v1, v1, 4
-	vxor	v0, v0, v4
-	
-	vadduwm	v4, v0, v3
-	vrlw	v4, v4, v16
-	vsldoi	v2, v2, v2, 8
-	vxor	v1, v1, v4
-	
-	vadduwm	v4, v1, v0
-	vrlw	v4, v4, v17
-	vxor	v2, v2, v4
-	
-	vadduwm	v4, v2, v1
-	vrlw	v4, v4, v18
-	vsldoi	v1, v1, v1, 12
-	vxor	v3, v3, v4
-	
-	vadduwm	v4, v3, v2
-	vrlw	v4, v4, v19
-	vsldoi	v3, v3, v3, 4
-	vxor	v0, v0, v4
-	vsldoi	v2, v2, v2, 8
-.endm
 
-.macro salsa8_core
-	salsa8_core_doubleround
-	salsa8_core_doubleround
-	salsa8_core_doubleround
-	salsa8_core_doubleround
-.endm
 
 #ifdef _AIX
 	.csect .text[PR]
@@ -239,7 +194,154 @@ scrypt_core_loop1:
 	vor	v3, v11, v11
 	stvx	v15, r4, r12
 	
-	salsa8_core
+	vadduwm	v4, v0, v1
+	vrlw	v4, v4, v16
+	vxor	v3, v3, v4
+	
+	vadduwm	v4, v3, v0
+	vrlw	v4, v4, v17
+	vxor	v2, v2, v4
+	
+	vadduwm	v4, v2, v3
+	vrlw	v4, v4, v18
+	vsldoi	v3, v3, v3, 12
+	vxor	v1, v1, v4
+	
+	vadduwm	v4, v1, v2
+	vrlw	v4, v4, v19
+	vsldoi	v1, v1, v1, 4
+	vxor	v0, v0, v4
+	
+	vadduwm	v4, v0, v3
+	vrlw	v4, v4, v16
+	vsldoi	v2, v2, v2, 8
+	vxor	v1, v1, v4
+	
+	vadduwm	v4, v1, v0
+	vrlw	v4, v4, v17
+	vxor	v2, v2, v4
+	
+	vadduwm	v4, v2, v1
+	vrlw	v4, v4, v18
+	vsldoi	v1, v1, v1, 12
+	vxor	v3, v3, v4
+	
+	vadduwm	v4, v3, v2
+	vrlw	v4, v4, v19
+	vsldoi	v3, v3, v3, 4
+	vxor	v0, v0, v4
+	vsldoi	v2, v2, v2, 8
+	vadduwm	v4, v0, v1
+	vrlw	v4, v4, v16
+	vxor	v3, v3, v4
+	
+	vadduwm	v4, v3, v0
+	vrlw	v4, v4, v17
+	vxor	v2, v2, v4
+	
+	vadduwm	v4, v2, v3
+	vrlw	v4, v4, v18
+	vsldoi	v3, v3, v3, 12
+	vxor	v1, v1, v4
+	
+	vadduwm	v4, v1, v2
+	vrlw	v4, v4, v19
+	vsldoi	v1, v1, v1, 4
+	vxor	v0, v0, v4
+	
+	vadduwm	v4, v0, v3
+	vrlw	v4, v4, v16
+	vsldoi	v2, v2, v2, 8
+	vxor	v1, v1, v4
+	
+	vadduwm	v4, v1, v0
+	vrlw	v4, v4, v17
+	vxor	v2, v2, v4
+	
+	vadduwm	v4, v2, v1
+	vrlw	v4, v4, v18
+	vsldoi	v1, v1, v1, 12
+	vxor	v3, v3, v4
+	
+	vadduwm	v4, v3, v2
+	vrlw	v4, v4, v19
+	vsldoi	v3, v3, v3, 4
+	vxor	v0, v0, v4
+	vsldoi	v2, v2, v2, 8
+	vadduwm	v4, v0, v1
+	vrlw	v4, v4, v16
+	vxor	v3, v3, v4
+	
+	vadduwm	v4, v3, v0
+	vrlw	v4, v4, v17
+	vxor	v2, v2, v4
+	
+	vadduwm	v4, v2, v3
+	vrlw	v4, v4, v18
+	vsldoi	v3, v3, v3, 12
+	vxor	v1, v1, v4
+	
+	vadduwm	v4, v1, v2
+	vrlw	v4, v4, v19
+	vsldoi	v1, v1, v1, 4
+	vxor	v0, v0, v4
+	
+	vadduwm	v4, v0, v3
+	vrlw	v4, v4, v16
+	vsldoi	v2, v2, v2, 8
+	vxor	v1, v1, v4
+	
+	vadduwm	v4, v1, v0
+	vrlw	v4, v4, v17
+	vxor	v2, v2, v4
+	
+	vadduwm	v4, v2, v1
+	vrlw	v4, v4, v18
+	vsldoi	v1, v1, v1, 12
+	vxor	v3, v3, v4
+	
+	vadduwm	v4, v3, v2
+	vrlw	v4, v4, v19
+	vsldoi	v3, v3, v3, 4
+	vxor	v0, v0, v4
+	vsldoi	v2, v2, v2, 8
+	vadduwm	v4, v0, v1
+	vrlw	v4, v4, v16
+	vxor	v3, v3, v4
+	
+	vadduwm	v4, v3, v0
+	vrlw	v4, v4, v17
+	vxor	v2, v2, v4
+	
+	vadduwm	v4, v2, v3
+	vrlw	v4, v4, v18
+	vsldoi	v3, v3, v3, 12
+	vxor	v1, v1, v4
+	
+	vadduwm	v4, v1, v2
+	vrlw	v4, v4, v19
+	vsldoi	v1, v1, v1, 4
+	vxor	v0, v0, v4
+	
+	vadduwm	v4, v0, v3
+	vrlw	v4, v4, v16
+	vsldoi	v2, v2, v2, 8
+	vxor	v1, v1, v4
+	
+	vadduwm	v4, v1, v0
+	vrlw	v4, v4, v17
+	vxor	v2, v2, v4
+	
+	vadduwm	v4, v2, v1
+	vrlw	v4, v4, v18
+	vsldoi	v1, v1, v1, 12
+	vxor	v3, v3, v4
+	
+	vadduwm	v4, v3, v2
+	vrlw	v4, v4, v19
+	vsldoi	v3, v3, v3, 4
+	vxor	v0, v0, v4
+	vsldoi	v2, v2, v2, 8
 	
 	vadduwm	v8, v8, v0
 	vadduwm	v9, v9, v1
@@ -255,7 +357,154 @@ scrypt_core_loop1:
 	vor	v2, v14, v14
 	vor	v3, v15, v15
 	
-	salsa8_core
+	vadduwm	v4, v0, v1
+	vrlw	v4, v4, v16
+	vxor	v3, v3, v4
+	
+	vadduwm	v4, v3, v0
+	vrlw	v4, v4, v17
+	vxor	v2, v2, v4
+	
+	vadduwm	v4, v2, v3
+	vrlw	v4, v4, v18
+	vsldoi	v3, v3, v3, 12
+	vxor	v1, v1, v4
+	
+	vadduwm	v4, v1, v2
+	vrlw	v4, v4, v19
+	vsldoi	v1, v1, v1, 4
+	vxor	v0, v0, v4
+	
+	vadduwm	v4, v0, v3
+	vrlw	v4, v4, v16
+	vsldoi	v2, v2, v2, 8
+	vxor	v1, v1, v4
+	
+	vadduwm	v4, v1, v0
+	vrlw	v4, v4, v17
+	vxor	v2, v2, v4
+	
+	vadduwm	v4, v2, v1
+	vrlw	v4, v4, v18
+	vsldoi	v1, v1, v1, 12
+	vxor	v3, v3, v4
+	
+	vadduwm	v4, v3, v2
+	vrlw	v4, v4, v19
+	vsldoi	v3, v3, v3, 4
+	vxor	v0, v0, v4
+	vsldoi	v2, v2, v2, 8
+	vadduwm	v4, v0, v1
+	vrlw	v4, v4, v16
+	vxor	v3, v3, v4
+	
+	vadduwm	v4, v3, v0
+	vrlw	v4, v4, v17
+	vxor	v2, v2, v4
+	
+	vadduwm	v4, v2, v3
+	vrlw	v4, v4, v18
+	vsldoi	v3, v3, v3, 12
+	vxor	v1, v1, v4
+	
+	vadduwm	v4, v1, v2
+	vrlw	v4, v4, v19
+	vsldoi	v1, v1, v1, 4
+	vxor	v0, v0, v4
+	
+	vadduwm	v4, v0, v3
+	vrlw	v4, v4, v16
+	vsldoi	v2, v2, v2, 8
+	vxor	v1, v1, v4
+	
+	vadduwm	v4, v1, v0
+	vrlw	v4, v4, v17
+	vxor	v2, v2, v4
+	
+	vadduwm	v4, v2, v1
+	vrlw	v4, v4, v18
+	vsldoi	v1, v1, v1, 12
+	vxor	v3, v3, v4
+	
+	vadduwm	v4, v3, v2
+	vrlw	v4, v4, v19
+	vsldoi	v3, v3, v3, 4
+	vxor	v0, v0, v4
+	vsldoi	v2, v2, v2, 8
+	vadduwm	v4, v0, v1
+	vrlw	v4, v4, v16
+	vxor	v3, v3, v4
+	
+	vadduwm	v4, v3, v0
+	vrlw	v4, v4, v17
+	vxor	v2, v2, v4
+	
+	vadduwm	v4, v2, v3
+	vrlw	v4, v4, v18
+	vsldoi	v3, v3, v3, 12
+	vxor	v1, v1, v4
+	
+	vadduwm	v4, v1, v2
+	vrlw	v4, v4, v19
+	vsldoi	v1, v1, v1, 4
+	vxor	v0, v0, v4
+	
+	vadduwm	v4, v0, v3
+	vrlw	v4, v4, v16
+	vsldoi	v2, v2, v2, 8
+	vxor	v1, v1, v4
+	
+	vadduwm	v4, v1, v0
+	vrlw	v4, v4, v17
+	vxor	v2, v2, v4
+	
+	vadduwm	v4, v2, v1
+	vrlw	v4, v4, v18
+	vsldoi	v1, v1, v1, 12
+	vxor	v3, v3, v4
+	
+	vadduwm	v4, v3, v2
+	vrlw	v4, v4, v19
+	vsldoi	v3, v3, v3, 4
+	vxor	v0, v0, v4
+	vsldoi	v2, v2, v2, 8
+	vadduwm	v4, v0, v1
+	vrlw	v4, v4, v16
+	vxor	v3, v3, v4
+	
+	vadduwm	v4, v3, v0
+	vrlw	v4, v4, v17
+	vxor	v2, v2, v4
+	
+	vadduwm	v4, v2, v3
+	vrlw	v4, v4, v18
+	vsldoi	v3, v3, v3, 12
+	vxor	v1, v1, v4
+	
+	vadduwm	v4, v1, v2
+	vrlw	v4, v4, v19
+	vsldoi	v1, v1, v1, 4
+	vxor	v0, v0, v4
+	
+	vadduwm	v4, v0, v3
+	vrlw	v4, v4, v16
+	vsldoi	v2, v2, v2, 8
+	vxor	v1, v1, v4
+	
+	vadduwm	v4, v1, v0
+	vrlw	v4, v4, v17
+	vxor	v2, v2, v4
+	
+	vadduwm	v4, v2, v1
+	vrlw	v4, v4, v18
+	vsldoi	v1, v1, v1, 12
+	vxor	v3, v3, v4
+	
+	vadduwm	v4, v3, v2
+	vrlw	v4, v4, v19
+	vsldoi	v3, v3, v3, 4
+	vxor	v0, v0, v4
+	vsldoi	v2, v2, v2, 8
 	
 	vadduwm	v12, v12, v0
 	vadduwm	v13, v13, v1
@@ -298,7 +547,154 @@ scrypt_core_loop2:
 	vor	v11, v3, v3
 	lvx	v7, r8, r6
 	
-	salsa8_core
+	vadduwm	v4, v0, v1
+	vrlw	v4, v4, v16
+	vxor	v3, v3, v4
+	
+	vadduwm	v4, v3, v0
+	vrlw	v4, v4, v17
+	vxor	v2, v2, v4
+	
+	vadduwm	v4, v2, v3
+	vrlw	v4, v4, v18
+	vsldoi	v3, v3, v3, 12
+	vxor	v1, v1, v4
+	
+	vadduwm	v4, v1, v2
+	vrlw	v4, v4, v19
+	vsldoi	v1, v1, v1, 4
+	vxor	v0, v0, v4
+	
+	vadduwm	v4, v0, v3
+	vrlw	v4, v4, v16
+	vsldoi	v2, v2, v2, 8
+	vxor	v1, v1, v4
+	
+	vadduwm	v4, v1, v0
+	vrlw	v4, v4, v17
+	vxor	v2, v2, v4
+	
+	vadduwm	v4, v2, v1
+	vrlw	v4, v4, v18
+	vsldoi	v1, v1, v1, 12
+	vxor	v3, v3, v4
+	
+	vadduwm	v4, v3, v2
+	vrlw	v4, v4, v19
+	vsldoi	v3, v3, v3, 4
+	vxor	v0, v0, v4
+	vsldoi	v2, v2, v2, 8
+	vadduwm	v4, v0, v1
+	vrlw	v4, v4, v16
+	vxor	v3, v3, v4
+	
+	vadduwm	v4, v3, v0
+	vrlw	v4, v4, v17
+	vxor	v2, v2, v4
+	
+	vadduwm	v4, v2, v3
+	vrlw	v4, v4, v18
+	vsldoi	v3, v3, v3, 12
+	vxor	v1, v1, v4
+	
+	vadduwm	v4, v1, v2
+	vrlw	v4, v4, v19
+	vsldoi	v1, v1, v1, 4
+	vxor	v0, v0, v4
+	
+	vadduwm	v4, v0, v3
+	vrlw	v4, v4, v16
+	vsldoi	v2, v2, v2, 8
+	vxor	v1, v1, v4
+	
+	vadduwm	v4, v1, v0
+	vrlw	v4, v4, v17
+	vxor	v2, v2, v4
+	
+	vadduwm	v4, v2, v1
+	vrlw	v4, v4, v18
+	vsldoi	v1, v1, v1, 12
+	vxor	v3, v3, v4
+	
+	vadduwm	v4, v3, v2
+	vrlw	v4, v4, v19
+	vsldoi	v3, v3, v3, 4
+	vxor	v0, v0, v4
+	vsldoi	v2, v2, v2, 8
+	vadduwm	v4, v0, v1
+	vrlw	v4, v4, v16
+	vxor	v3, v3, v4
+	
+	vadduwm	v4, v3, v0
+	vrlw	v4, v4, v17
+	vxor	v2, v2, v4
+	
+	vadduwm	v4, v2, v3
+	vrlw	v4, v4, v18
+	vsldoi	v3, v3, v3, 12
+	vxor	v1, v1, v4
+	
+	vadduwm	v4, v1, v2
+	vrlw	v4, v4, v19
+	vsldoi	v1, v1, v1, 4
+	vxor	v0, v0, v4
+	
+	vadduwm	v4, v0, v3
+	vrlw	v4, v4, v16
+	vsldoi	v2, v2, v2, 8
+	vxor	v1, v1, v4
+	
+	vadduwm	v4, v1, v0
+	vrlw	v4, v4, v17
+	vxor	v2, v2, v4
+	
+	vadduwm	v4, v2, v1
+	vrlw	v4, v4, v18
+	vsldoi	v1, v1, v1, 12
+	vxor	v3, v3, v4
+	
+	vadduwm	v4, v3, v2
+	vrlw	v4, v4, v19
+	vsldoi	v3, v3, v3, 4
+	vxor	v0, v0, v4
+	vsldoi	v2, v2, v2, 8
+	vadduwm	v4, v0, v1
+	vrlw	v4, v4, v16
+	vxor	v3, v3, v4
+	
+	vadduwm	v4, v3, v0
+	vrlw	v4, v4, v17
+	vxor	v2, v2, v4
+	
+	vadduwm	v4, v2, v3
+	vrlw	v4, v4, v18
+	vsldoi	v3, v3, v3, 12
+	vxor	v1, v1, v4
+	
+	vadduwm	v4, v1, v2
+	vrlw	v4, v4, v19
+	vsldoi	v1, v1, v1, 4
+	vxor	v0, v0, v4
+	
+	vadduwm	v4, v0, v3
+	vrlw	v4, v4, v16
+	vsldoi	v2, v2, v2, 8
+	vxor	v1, v1, v4
+	
+	vadduwm	v4, v1, v0
+	vrlw	v4, v4, v17
+	vxor	v2, v2, v4
+	
+	vadduwm	v4, v2, v1
+	vrlw	v4, v4, v18
+	vsldoi	v1, v1, v1, 12
+	vxor	v3, v3, v4
+	
+	vadduwm	v4, v3, v2
+	vrlw	v4, v4, v19
+	vsldoi	v3, v3, v3, 4
+	vxor	v0, v0, v4
+	vsldoi	v2, v2, v2, 8
 	
 	vadduwm	v8, v8, v0
 	lvx	v0, r9, r6
@@ -319,7 +715,154 @@ scrypt_core_loop2:
 	vor	v2, v14, v14
 	vor	v3, v15, v15
 	
-	salsa8_core
+	vadduwm	v4, v0, v1
+	vrlw	v4, v4, v16
+	vxor	v3, v3, v4
+	
+	vadduwm	v4, v3, v0
+	vrlw	v4, v4, v17
+	vxor	v2, v2, v4
+	
+	vadduwm	v4, v2, v3
+	vrlw	v4, v4, v18
+	vsldoi	v3, v3, v3, 12
+	vxor	v1, v1, v4
+	
+	vadduwm	v4, v1, v2
+	vrlw	v4, v4, v19
+	vsldoi	v1, v1, v1, 4
+	vxor	v0, v0, v4
+	
+	vadduwm	v4, v0, v3
+	vrlw	v4, v4, v16
+	vsldoi	v2, v2, v2, 8
+	vxor	v1, v1, v4
+	
+	vadduwm	v4, v1, v0
+	vrlw	v4, v4, v17
+	vxor	v2, v2, v4
+	
+	vadduwm	v4, v2, v1
+	vrlw	v4, v4, v18
+	vsldoi	v1, v1, v1, 12
+	vxor	v3, v3, v4
+	
+	vadduwm	v4, v3, v2
+	vrlw	v4, v4, v19
+	vsldoi	v3, v3, v3, 4
+	vxor	v0, v0, v4
+	vsldoi	v2, v2, v2, 8
+	vadduwm	v4, v0, v1
+	vrlw	v4, v4, v16
+	vxor	v3, v3, v4
+	
+	vadduwm	v4, v3, v0
+	vrlw	v4, v4, v17
+	vxor	v2, v2, v4
+	
+	vadduwm	v4, v2, v3
+	vrlw	v4, v4, v18
+	vsldoi	v3, v3, v3, 12
+	vxor	v1, v1, v4
+	
+	vadduwm	v4, v1, v2
+	vrlw	v4, v4, v19
+	vsldoi	v1, v1, v1, 4
+	vxor	v0, v0, v4
+	
+	vadduwm	v4, v0, v3
+	vrlw	v4, v4, v16
+	vsldoi	v2, v2, v2, 8
+	vxor	v1, v1, v4
+	
+	vadduwm	v4, v1, v0
+	vrlw	v4, v4, v17
+	vxor	v2, v2, v4
+	
+	vadduwm	v4, v2, v1
+	vrlw	v4, v4, v18
+	vsldoi	v1, v1, v1, 12
+	vxor	v3, v3, v4
+	
+	vadduwm	v4, v3, v2
+	vrlw	v4, v4, v19
+	vsldoi	v3, v3, v3, 4
+	vxor	v0, v0, v4
+	vsldoi	v2, v2, v2, 8
+	vadduwm	v4, v0, v1
+	vrlw	v4, v4, v16
+	vxor	v3, v3, v4
+	
+	vadduwm	v4, v3, v0
+	vrlw	v4, v4, v17
+	vxor	v2, v2, v4
+	
+	vadduwm	v4, v2, v3
+	vrlw	v4, v4, v18
+	vsldoi	v3, v3, v3, 12
+	vxor	v1, v1, v4
+	
+	vadduwm	v4, v1, v2
+	vrlw	v4, v4, v19
+	vsldoi	v1, v1, v1, 4
+	vxor	v0, v0, v4
+	
+	vadduwm	v4, v0, v3
+	vrlw	v4, v4, v16
+	vsldoi	v2, v2, v2, 8
+	vxor	v1, v1, v4
+	
+	vadduwm	v4, v1, v0
+	vrlw	v4, v4, v17
+	vxor	v2, v2, v4
+	
+	vadduwm	v4, v2, v1
+	vrlw	v4, v4, v18
+	vsldoi	v1, v1, v1, 12
+	vxor	v3, v3, v4
+	
+	vadduwm	v4, v3, v2
+	vrlw	v4, v4, v19
+	vsldoi	v3, v3, v3, 4
+	vxor	v0, v0, v4
+	vsldoi	v2, v2, v2, 8
+	vadduwm	v4, v0, v1
+	vrlw	v4, v4, v16
+	vxor	v3, v3, v4
+	
+	vadduwm	v4, v3, v0
+	vrlw	v4, v4, v17
+	vxor	v2, v2, v4
+	
+	vadduwm	v4, v2, v3
+	vrlw	v4, v4, v18
+	vsldoi	v3, v3, v3, 12
+	vxor	v1, v1, v4
+	
+	vadduwm	v4, v1, v2
+	vrlw	v4, v4, v19
+	vsldoi	v1, v1, v1, 4
+	vxor	v0, v0, v4
+	
+	vadduwm	v4, v0, v3
+	vrlw	v4, v4, v16
+	vsldoi	v2, v2, v2, 8
+	vxor	v1, v1, v4
+	
+	vadduwm	v4, v1, v0
+	vrlw	v4, v4, v17
+	vxor	v2, v2, v4
+	
+	vadduwm	v4, v2, v1
+	vrlw	v4, v4, v18
+	vsldoi	v1, v1, v1, 12
+	vxor	v3, v3, v4
+	
+	vadduwm	v4, v3, v2
+	vrlw	v4, v4, v19
+	vsldoi	v3, v3, v3, 4
+	vxor	v0, v0, v4
+	vsldoi	v2, v2, v2, 8
 	
 	vadduwm	v12, v12, v0
 	stvx	v12, 0, r3
@@ -381,118 +924,7 @@ scrypt_core_loop2:
 
 #else /* __ALTIVEC__ */
 
-.macro salsa8_core_doubleround
-	add	r0, r16, r28
-	add	r5, r21, r17
-	add	r6, r26, r22
-	add	r7, r31, r27
-	rotlwi	r0, r0, 7
-	rotlwi	r5, r5, 7
-	rotlwi	r6, r6, 7
-	rotlwi	r7, r7, 7
-	xor	r20, r20, r0
-	xor	r25, r25, r5
-	xor	r30, r30, r6
-	xor	r19, r19, r7
-	
-	add	r0, r20, r16
-	add	r5, r25, r21
-	add	r6, r30, r26
-	add	r7, r19, r31
-	rotlwi	r0, r0, 9
-	rotlwi	r5, r5, 9
-	rotlwi	r6, r6, 9
-	rotlwi	r7, r7, 9
-	xor	r24, r24, r0
-	xor	r29, r29, r5
-	xor	r18, r18, r6
-	xor	r23, r23, r7
-	
-	add	r0, r24, r20
-	add	r5, r29, r25
-	add	r6, r18, r30
-	add	r7, r23, r19
-	rotlwi	r0, r0, 13
-	rotlwi	r5, r5, 13
-	rotlwi	r6, r6, 13
-	rotlwi	r7, r7, 13
-	xor	r28, r28, r0
-	xor	r17, r17, r5
-	xor	r22, r22, r6
-	xor	r27, r27, r7
-	
-	add	r0, r28, r24
-	add	r5, r17, r29
-	add	r6, r22, r18
-	add	r7, r27, r23
-	rotlwi	r0, r0, 18
-	rotlwi	r5, r5, 18
-	rotlwi	r6, r6, 18
-	rotlwi	r7, r7, 18
-	xor	r16, r16, r0
-	xor	r21, r21, r5
-	xor	r26, r26, r6
-	xor	r31, r31, r7
-	
-	add	r0, r16, r19
-	add	r5, r21, r20
-	add	r6, r26, r25
-	add	r7, r31, r30
-	rotlwi	r0, r0, 7
-	rotlwi	r5, r5, 7
-	rotlwi	r6, r6, 7
-	rotlwi	r7, r7, 7
-	xor	r17, r17, r0
-	xor	r22, r22, r5
-	xor	r27, r27, r6
-	xor	r28, r28, r7
-	
-	add	r0, r17, r16
-	add	r5, r22, r21
-	add	r6, r27, r26
-	add	r7, r28, r31
-	rotlwi	r0, r0, 9
-	rotlwi	r5, r5, 9
-	rotlwi	r6, r6, 9
-	rotlwi	r7, r7, 9
-	xor	r18, r18, r0
-	xor	r23, r23, r5
-	xor	r24, r24, r6
-	xor	r29, r29, r7
-	
-	add	r0, r18, r17
-	add	r5, r23, r22
-	add	r6, r24, r27
-	add	r7, r29, r28
-	rotlwi	r0, r0, 13
-	rotlwi	r5, r5, 13
-	rotlwi	r6, r6, 13
-	rotlwi	r7, r7, 13
-	xor	r19, r19, r0
-	xor	r20, r20, r5
-	xor	r25, r25, r6
-	xor	r30, r30, r7
-	
-	add	r0, r19, r18
-	add	r5, r20, r23
-	add	r6, r25, r24
-	add	r7, r30, r29
-	rotlwi	r0, r0, 18
-	rotlwi	r5, r5, 18
-	rotlwi	r6, r6, 18
-	rotlwi	r7, r7, 18
-	xor	r16, r16, r0
-	xor	r21, r21, r5
-	xor	r26, r26, r6
-	xor	r31, r31, r7
-.endm
 
-.macro salsa8_core
-	salsa8_core_doubleround
-	salsa8_core_doubleround
-	salsa8_core_doubleround
-	salsa8_core_doubleround
-.endm
 
 #ifdef _AIX
 	.csect .text[PR]
@@ -667,7 +1099,418 @@ scrypt_core_loop1:
 	stw	r14, 30*4(r4)
 	stw	r15, 31*4(r4)
 	
-	salsa8_core
+	add	r0, r16, r28
+	add	r5, r21, r17
+	add	r6, r26, r22
+	add	r7, r31, r27
+	rotlwi	r0, r0, 7
+	rotlwi	r5, r5, 7
+	rotlwi	r6, r6, 7
+	rotlwi	r7, r7, 7
+	xor	r20, r20, r0
+	xor	r25, r25, r5
+	xor	r30, r30, r6
+	xor	r19, r19, r7
+	
+	add	r0, r20, r16
+	add	r5, r25, r21
+	add	r6, r30, r26
+	add	r7, r19, r31
+	rotlwi	r0, r0, 9
+	rotlwi	r5, r5, 9
+	rotlwi	r6, r6, 9
+	rotlwi	r7, r7, 9
+	xor	r24, r24, r0
+	xor	r29, r29, r5
+	xor	r18, r18, r6
+	xor	r23, r23, r7
+	
+	add	r0, r24, r20
+	add	r5, r29, r25
+	add	r6, r18, r30
+	add	r7, r23, r19
+	rotlwi	r0, r0, 13
+	rotlwi	r5, r5, 13
+	rotlwi	r6, r6, 13
+	rotlwi	r7, r7, 13
+	xor	r28, r28, r0
+	xor	r17, r17, r5
+	xor	r22, r22, r6
+	xor	r27, r27, r7
+	
+	add	r0, r28, r24
+	add	r5, r17, r29
+	add	r6, r22, r18
+	add	r7, r27, r23
+	rotlwi	r0, r0, 18
+	rotlwi	r5, r5, 18
+	rotlwi	r6, r6, 18
+	rotlwi	r7, r7, 18
+	xor	r16, r16, r0
+	xor	r21, r21, r5
+	xor	r26, r26, r6
+	xor	r31, r31, r7
+	
+	add	r0, r16, r19
+	add	r5, r21, r20
+	add	r6, r26, r25
+	add	r7, r31, r30
+	rotlwi	r0, r0, 7
+	rotlwi	r5, r5, 7
+	rotlwi	r6, r6, 7
+	rotlwi	r7, r7, 7
+	xor	r17, r17, r0
+	xor	r22, r22, r5
+	xor	r27, r27, r6
+	xor	r28, r28, r7
+	
+	add	r0, r17, r16
+	add	r5, r22, r21
+	add	r6, r27, r26
+	add	r7, r28, r31
+	rotlwi	r0, r0, 9
+	rotlwi	r5, r5, 9
+	rotlwi	r6, r6, 9
+	rotlwi	r7, r7, 9
+	xor	r18, r18, r0
+	xor	r23, r23, r5
+	xor	r24, r24, r6
+	xor	r29, r29, r7
+	
+	add	r0, r18, r17
+	add	r5, r23, r22
+	add	r6, r24, r27
+	add	r7, r29, r28
+	rotlwi	r0, r0, 13
+	rotlwi	r5, r5, 13
+	rotlwi	r6, r6, 13
+	rotlwi	r7, r7, 13
+	xor	r19, r19, r0
+	xor	r20, r20, r5
+	xor	r25, r25, r6
+	xor	r30, r30, r7
+	
+	add	r0, r19, r18
+	add	r5, r20, r23
+	add	r6, r25, r24
+	add	r7, r30, r29
+	rotlwi	r0, r0, 18
+	rotlwi	r5, r5, 18
+	rotlwi	r6, r6, 18
+	rotlwi	r7, r7, 18
+	xor	r16, r16, r0
+	xor	r21, r21, r5
+	xor	r26, r26, r6
+	xor	r31, r31, r7
+	add	r0, r16, r28
+	add	r5, r21, r17
+	add	r6, r26, r22
+	add	r7, r31, r27
+	rotlwi	r0, r0, 7
+	rotlwi	r5, r5, 7
+	rotlwi	r6, r6, 7
+	rotlwi	r7, r7, 7
+	xor	r20, r20, r0
+	xor	r25, r25, r5
+	xor	r30, r30, r6
+	xor	r19, r19, r7
+	
+	add	r0, r20, r16
+	add	r5, r25, r21
+	add	r6, r30, r26
+	add	r7, r19, r31
+	rotlwi	r0, r0, 9
+	rotlwi	r5, r5, 9
+	rotlwi	r6, r6, 9
+	rotlwi	r7, r7, 9
+	xor	r24, r24, r0
+	xor	r29, r29, r5
+	xor	r18, r18, r6
+	xor	r23, r23, r7
+	
+	add	r0, r24, r20
+	add	r5, r29, r25
+	add	r6, r18, r30
+	add	r7, r23, r19
+	rotlwi	r0, r0, 13
+	rotlwi	r5, r5, 13
+	rotlwi	r6, r6, 13
+	rotlwi	r7, r7, 13
+	xor	r28, r28, r0
+	xor	r17, r17, r5
+	xor	r22, r22, r6
+	xor	r27, r27, r7
+	
+	add	r0, r28, r24
+	add	r5, r17, r29
+	add	r6, r22, r18
+	add	r7, r27, r23
+	rotlwi	r0, r0, 18
+	rotlwi	r5, r5, 18
+	rotlwi	r6, r6, 18
+	rotlwi	r7, r7, 18
+	xor	r16, r16, r0
+	xor	r21, r21, r5
+	xor	r26, r26, r6
+	xor	r31, r31, r7
+	
+	add	r0, r16, r19
+	add	r5, r21, r20
+	add	r6, r26, r25
+	add	r7, r31, r30
+	rotlwi	r0, r0, 7
+	rotlwi	r5, r5, 7
+	rotlwi	r6, r6, 7
+	rotlwi	r7, r7, 7
+	xor	r17, r17, r0
+	xor	r22, r22, r5
+	xor	r27, r27, r6
+	xor	r28, r28, r7
+	
+	add	r0, r17, r16
+	add	r5, r22, r21
+	add	r6, r27, r26
+	add	r7, r28, r31
+	rotlwi	r0, r0, 9
+	rotlwi	r5, r5, 9
+	rotlwi	r6, r6, 9
+	rotlwi	r7, r7, 9
+	xor	r18, r18, r0
+	xor	r23, r23, r5
+	xor	r24, r24, r6
+	xor	r29, r29, r7
+	
+	add	r0, r18, r17
+	add	r5, r23, r22
+	add	r6, r24, r27
+	add	r7, r29, r28
+	rotlwi	r0, r0, 13
+	rotlwi	r5, r5, 13
+	rotlwi	r6, r6, 13
+	rotlwi	r7, r7, 13
+	xor	r19, r19, r0
+	xor	r20, r20, r5
+	xor	r25, r25, r6
+	xor	r30, r30, r7
+	
+	add	r0, r19, r18
+	add	r5, r20, r23
+	add	r6, r25, r24
+	add	r7, r30, r29
+	rotlwi	r0, r0, 18
+	rotlwi	r5, r5, 18
+	rotlwi	r6, r6, 18
+	rotlwi	r7, r7, 18
+	xor	r16, r16, r0
+	xor	r21, r21, r5
+	xor	r26, r26, r6
+	xor	r31, r31, r7
+	add	r0, r16, r28
+	add	r5, r21, r17
+	add	r6, r26, r22
+	add	r7, r31, r27
+	rotlwi	r0, r0, 7
+	rotlwi	r5, r5, 7
+	rotlwi	r6, r6, 7
+	rotlwi	r7, r7, 7
+	xor	r20, r20, r0
+	xor	r25, r25, r5
+	xor	r30, r30, r6
+	xor	r19, r19, r7
+	
+	add	r0, r20, r16
+	add	r5, r25, r21
+	add	r6, r30, r26
+	add	r7, r19, r31
+	rotlwi	r0, r0, 9
+	rotlwi	r5, r5, 9
+	rotlwi	r6, r6, 9
+	rotlwi	r7, r7, 9
+	xor	r24, r24, r0
+	xor	r29, r29, r5
+	xor	r18, r18, r6
+	xor	r23, r23, r7
+	
+	add	r0, r24, r20
+	add	r5, r29, r25
+	add	r6, r18, r30
+	add	r7, r23, r19
+	rotlwi	r0, r0, 13
+	rotlwi	r5, r5, 13
+	rotlwi	r6, r6, 13
+	rotlwi	r7, r7, 13
+	xor	r28, r28, r0
+	xor	r17, r17, r5
+	xor	r22, r22, r6
+	xor	r27, r27, r7
+	
+	add	r0, r28, r24
+	add	r5, r17, r29
+	add	r6, r22, r18
+	add	r7, r27, r23
+	rotlwi	r0, r0, 18
+	rotlwi	r5, r5, 18
+	rotlwi	r6, r6, 18
+	rotlwi	r7, r7, 18
+	xor	r16, r16, r0
+	xor	r21, r21, r5
+	xor	r26, r26, r6
+	xor	r31, r31, r7
+	
+	add	r0, r16, r19
+	add	r5, r21, r20
+	add	r6, r26, r25
+	add	r7, r31, r30
+	rotlwi	r0, r0, 7
+	rotlwi	r5, r5, 7
+	rotlwi	r6, r6, 7
+	rotlwi	r7, r7, 7
+	xor	r17, r17, r0
+	xor	r22, r22, r5
+	xor	r27, r27, r6
+	xor	r28, r28, r7
+	
+	add	r0, r17, r16
+	add	r5, r22, r21
+	add	r6, r27, r26
+	add	r7, r28, r31
+	rotlwi	r0, r0, 9
+	rotlwi	r5, r5, 9
+	rotlwi	r6, r6, 9
+	rotlwi	r7, r7, 9
+	xor	r18, r18, r0
+	xor	r23, r23, r5
+	xor	r24, r24, r6
+	xor	r29, r29, r7
+	
+	add	r0, r18, r17
+	add	r5, r23, r22
+	add	r6, r24, r27
+	add	r7, r29, r28
+	rotlwi	r0, r0, 13
+	rotlwi	r5, r5, 13
+	rotlwi	r6, r6, 13
+	rotlwi	r7, r7, 13
+	xor	r19, r19, r0
+	xor	r20, r20, r5
+	xor	r25, r25, r6
+	xor	r30, r30, r7
+	
+	add	r0, r19, r18
+	add	r5, r20, r23
+	add	r6, r25, r24
+	add	r7, r30, r29
+	rotlwi	r0, r0, 18
+	rotlwi	r5, r5, 18
+	rotlwi	r6, r6, 18
+	rotlwi	r7, r7, 18
+	xor	r16, r16, r0
+	xor	r21, r21, r5
+	xor	r26, r26, r6
+	xor	r31, r31, r7
+	add	r0, r16, r28
+	add	r5, r21, r17
+	add	r6, r26, r22
+	add	r7, r31, r27
+	rotlwi	r0, r0, 7
+	rotlwi	r5, r5, 7
+	rotlwi	r6, r6, 7
+	rotlwi	r7, r7, 7
+	xor	r20, r20, r0
+	xor	r25, r25, r5
+	xor	r30, r30, r6
+	xor	r19, r19, r7
+	
+	add	r0, r20, r16
+	add	r5, r25, r21
+	add	r6, r30, r26
+	add	r7, r19, r31
+	rotlwi	r0, r0, 9
+	rotlwi	r5, r5, 9
+	rotlwi	r6, r6, 9
+	rotlwi	r7, r7, 9
+	xor	r24, r24, r0
+	xor	r29, r29, r5
+	xor	r18, r18, r6
+	xor	r23, r23, r7
+	
+	add	r0, r24, r20
+	add	r5, r29, r25
+	add	r6, r18, r30
+	add	r7, r23, r19
+	rotlwi	r0, r0, 13
+	rotlwi	r5, r5, 13
+	rotlwi	r6, r6, 13
+	rotlwi	r7, r7, 13
+	xor	r28, r28, r0
+	xor	r17, r17, r5
+	xor	r22, r22, r6
+	xor	r27, r27, r7
+	
+	add	r0, r28, r24
+	add	r5, r17, r29
+	add	r6, r22, r18
+	add	r7, r27, r23
+	rotlwi	r0, r0, 18
+	rotlwi	r5, r5, 18
+	rotlwi	r6, r6, 18
+	rotlwi	r7, r7, 18
+	xor	r16, r16, r0
+	xor	r21, r21, r5
+	xor	r26, r26, r6
+	xor	r31, r31, r7
+	
+	add	r0, r16, r19
+	add	r5, r21, r20
+	add	r6, r26, r25
+	add	r7, r31, r30
+	rotlwi	r0, r0, 7
+	rotlwi	r5, r5, 7
+	rotlwi	r6, r6, 7
+	rotlwi	r7, r7, 7
+	xor	r17, r17, r0
+	xor	r22, r22, r5
+	xor	r27, r27, r6
+	xor	r28, r28, r7
+	
+	add	r0, r17, r16
+	add	r5, r22, r21
+	add	r6, r27, r26
+	add	r7, r28, r31
+	rotlwi	r0, r0, 9
+	rotlwi	r5, r5, 9
+	rotlwi	r6, r6, 9
+	rotlwi	r7, r7, 9
+	xor	r18, r18, r0
+	xor	r23, r23, r5
+	xor	r24, r24, r6
+	xor	r29, r29, r7
+	
+	add	r0, r18, r17
+	add	r5, r23, r22
+	add	r6, r24, r27
+	add	r7, r29, r28
+	rotlwi	r0, r0, 13
+	rotlwi	r5, r5, 13
+	rotlwi	r6, r6, 13
+	rotlwi	r7, r7, 13
+	xor	r19, r19, r0
+	xor	r20, r20, r5
+	xor	r25, r25, r6
+	xor	r30, r30, r7
+	
+	add	r0, r19, r18
+	add	r5, r20, r23
+	add	r6, r25, r24
+	add	r7, r30, r29
+	rotlwi	r0, r0, 18
+	rotlwi	r5, r5, 18
+	rotlwi	r6, r6, 18
+	rotlwi	r7, r7, 18
+	xor	r16, r16, r0
+	xor	r21, r21, r5
+	xor	r26, r26, r6
+	xor	r31, r31, r7
 	
 	lwz	r0, 0*4(r4)
 	lwz	r5, 1*4(r4)
@@ -760,7 +1603,418 @@ scrypt_core_loop1:
 	mr	r14, r30
 	mr	r15, r31
 	
-	salsa8_core
+	add	r0, r16, r28
+	add	r5, r21, r17
+	add	r6, r26, r22
+	add	r7, r31, r27
+	rotlwi	r0, r0, 7
+	rotlwi	r5, r5, 7
+	rotlwi	r6, r6, 7
+	rotlwi	r7, r7, 7
+	xor	r20, r20, r0
+	xor	r25, r25, r5
+	xor	r30, r30, r6
+	xor	r19, r19, r7
+	
+	add	r0, r20, r16
+	add	r5, r25, r21
+	add	r6, r30, r26
+	add	r7, r19, r31
+	rotlwi	r0, r0, 9
+	rotlwi	r5, r5, 9
+	rotlwi	r6, r6, 9
+	rotlwi	r7, r7, 9
+	xor	r24, r24, r0
+	xor	r29, r29, r5
+	xor	r18, r18, r6
+	xor	r23, r23, r7
+	
+	add	r0, r24, r20
+	add	r5, r29, r25
+	add	r6, r18, r30
+	add	r7, r23, r19
+	rotlwi	r0, r0, 13
+	rotlwi	r5, r5, 13
+	rotlwi	r6, r6, 13
+	rotlwi	r7, r7, 13
+	xor	r28, r28, r0
+	xor	r17, r17, r5
+	xor	r22, r22, r6
+	xor	r27, r27, r7
+	
+	add	r0, r28, r24
+	add	r5, r17, r29
+	add	r6, r22, r18
+	add	r7, r27, r23
+	rotlwi	r0, r0, 18
+	rotlwi	r5, r5, 18
+	rotlwi	r6, r6, 18
+	rotlwi	r7, r7, 18
+	xor	r16, r16, r0
+	xor	r21, r21, r5
+	xor	r26, r26, r6
+	xor	r31, r31, r7
+	
+	add	r0, r16, r19
+	add	r5, r21, r20
+	add	r6, r26, r25
+	add	r7, r31, r30
+	rotlwi	r0, r0, 7
+	rotlwi	r5, r5, 7
+	rotlwi	r6, r6, 7
+	rotlwi	r7, r7, 7
+	xor	r17, r17, r0
+	xor	r22, r22, r5
+	xor	r27, r27, r6
+	xor	r28, r28, r7
+	
+	add	r0, r17, r16
+	add	r5, r22, r21
+	add	r6, r27, r26
+	add	r7, r28, r31
+	rotlwi	r0, r0, 9
+	rotlwi	r5, r5, 9
+	rotlwi	r6, r6, 9
+	rotlwi	r7, r7, 9
+	xor	r18, r18, r0
+	xor	r23, r23, r5
+	xor	r24, r24, r6
+	xor	r29, r29, r7
+	
+	add	r0, r18, r17
+	add	r5, r23, r22
+	add	r6, r24, r27
+	add	r7, r29, r28
+	rotlwi	r0, r0, 13
+	rotlwi	r5, r5, 13
+	rotlwi	r6, r6, 13
+	rotlwi	r7, r7, 13
+	xor	r19, r19, r0
+	xor	r20, r20, r5
+	xor	r25, r25, r6
+	xor	r30, r30, r7
+	
+	add	r0, r19, r18
+	add	r5, r20, r23
+	add	r6, r25, r24
+	add	r7, r30, r29
+	rotlwi	r0, r0, 18
+	rotlwi	r5, r5, 18
+	rotlwi	r6, r6, 18
+	rotlwi	r7, r7, 18
+	xor	r16, r16, r0
+	xor	r21, r21, r5
+	xor	r26, r26, r6
+	xor	r31, r31, r7
+	add	r0, r16, r28
+	add	r5, r21, r17
+	add	r6, r26, r22
+	add	r7, r31, r27
+	rotlwi	r0, r0, 7
+	rotlwi	r5, r5, 7
+	rotlwi	r6, r6, 7
+	rotlwi	r7, r7, 7
+	xor	r20, r20, r0
+	xor	r25, r25, r5
+	xor	r30, r30, r6
+	xor	r19, r19, r7
+	
+	add	r0, r20, r16
+	add	r5, r25, r21
+	add	r6, r30, r26
+	add	r7, r19, r31
+	rotlwi	r0, r0, 9
+	rotlwi	r5, r5, 9
+	rotlwi	r6, r6, 9
+	rotlwi	r7, r7, 9
+	xor	r24, r24, r0
+	xor	r29, r29, r5
+	xor	r18, r18, r6
+	xor	r23, r23, r7
+	
+	add	r0, r24, r20
+	add	r5, r29, r25
+	add	r6, r18, r30
+	add	r7, r23, r19
+	rotlwi	r0, r0, 13
+	rotlwi	r5, r5, 13
+	rotlwi	r6, r6, 13
+	rotlwi	r7, r7, 13
+	xor	r28, r28, r0
+	xor	r17, r17, r5
+	xor	r22, r22, r6
+	xor	r27, r27, r7
+	
+	add	r0, r28, r24
+	add	r5, r17, r29
+	add	r6, r22, r18
+	add	r7, r27, r23
+	rotlwi	r0, r0, 18
+	rotlwi	r5, r5, 18
+	rotlwi	r6, r6, 18
+	rotlwi	r7, r7, 18
+	xor	r16, r16, r0
+	xor	r21, r21, r5
+	xor	r26, r26, r6
+	xor	r31, r31, r7
+	
+	add	r0, r16, r19
+	add	r5, r21, r20
+	add	r6, r26, r25
+	add	r7, r31, r30
+	rotlwi	r0, r0, 7
+	rotlwi	r5, r5, 7
+	rotlwi	r6, r6, 7
+	rotlwi	r7, r7, 7
+	xor	r17, r17, r0
+	xor	r22, r22, r5
+	xor	r27, r27, r6
+	xor	r28, r28, r7
+	
+	add	r0, r17, r16
+	add	r5, r22, r21
+	add	r6, r27, r26
+	add	r7, r28, r31
+	rotlwi	r0, r0, 9
+	rotlwi	r5, r5, 9
+	rotlwi	r6, r6, 9
+	rotlwi	r7, r7, 9
+	xor	r18, r18, r0
+	xor	r23, r23, r5
+	xor	r24, r24, r6
+	xor	r29, r29, r7
+	
+	add	r0, r18, r17
+	add	r5, r23, r22
+	add	r6, r24, r27
+	add	r7, r29, r28
+	rotlwi	r0, r0, 13
+	rotlwi	r5, r5, 13
+	rotlwi	r6, r6, 13
+	rotlwi	r7, r7, 13
+	xor	r19, r19, r0
+	xor	r20, r20, r5
+	xor	r25, r25, r6
+	xor	r30, r30, r7
+	
+	add	r0, r19, r18
+	add	r5, r20, r23
+	add	r6, r25, r24
+	add	r7, r30, r29
+	rotlwi	r0, r0, 18
+	rotlwi	r5, r5, 18
+	rotlwi	r6, r6, 18
+	rotlwi	r7, r7, 18
+	xor	r16, r16, r0
+	xor	r21, r21, r5
+	xor	r26, r26, r6
+	xor	r31, r31, r7
+	add	r0, r16, r28
+	add	r5, r21, r17
+	add	r6, r26, r22
+	add	r7, r31, r27
+	rotlwi	r0, r0, 7
+	rotlwi	r5, r5, 7
+	rotlwi	r6, r6, 7
+	rotlwi	r7, r7, 7
+	xor	r20, r20, r0
+	xor	r25, r25, r5
+	xor	r30, r30, r6
+	xor	r19, r19, r7
+	
+	add	r0, r20, r16
+	add	r5, r25, r21
+	add	r6, r30, r26
+	add	r7, r19, r31
+	rotlwi	r0, r0, 9
+	rotlwi	r5, r5, 9
+	rotlwi	r6, r6, 9
+	rotlwi	r7, r7, 9
+	xor	r24, r24, r0
+	xor	r29, r29, r5
+	xor	r18, r18, r6
+	xor	r23, r23, r7
+	
+	add	r0, r24, r20
+	add	r5, r29, r25
+	add	r6, r18, r30
+	add	r7, r23, r19
+	rotlwi	r0, r0, 13
+	rotlwi	r5, r5, 13
+	rotlwi	r6, r6, 13
+	rotlwi	r7, r7, 13
+	xor	r28, r28, r0
+	xor	r17, r17, r5
+	xor	r22, r22, r6
+	xor	r27, r27, r7
+	
+	add	r0, r28, r24
+	add	r5, r17, r29
+	add	r6, r22, r18
+	add	r7, r27, r23
+	rotlwi	r0, r0, 18
+	rotlwi	r5, r5, 18
+	rotlwi	r6, r6, 18
+	rotlwi	r7, r7, 18
+	xor	r16, r16, r0
+	xor	r21, r21, r5
+	xor	r26, r26, r6
+	xor	r31, r31, r7
+	
+	add	r0, r16, r19
+	add	r5, r21, r20
+	add	r6, r26, r25
+	add	r7, r31, r30
+	rotlwi	r0, r0, 7
+	rotlwi	r5, r5, 7
+	rotlwi	r6, r6, 7
+	rotlwi	r7, r7, 7
+	xor	r17, r17, r0
+	xor	r22, r22, r5
+	xor	r27, r27, r6
+	xor	r28, r28, r7
+	
+	add	r0, r17, r16
+	add	r5, r22, r21
+	add	r6, r27, r26
+	add	r7, r28, r31
+	rotlwi	r0, r0, 9
+	rotlwi	r5, r5, 9
+	rotlwi	r6, r6, 9
+	rotlwi	r7, r7, 9
+	xor	r18, r18, r0
+	xor	r23, r23, r5
+	xor	r24, r24, r6
+	xor	r29, r29, r7
+	
+	add	r0, r18, r17
+	add	r5, r23, r22
+	add	r6, r24, r27
+	add	r7, r29, r28
+	rotlwi	r0, r0, 13
+	rotlwi	r5, r5, 13
+	rotlwi	r6, r6, 13
+	rotlwi	r7, r7, 13
+	xor	r19, r19, r0
+	xor	r20, r20, r5
+	xor	r25, r25, r6
+	xor	r30, r30, r7
+	
+	add	r0, r19, r18
+	add	r5, r20, r23
+	add	r6, r25, r24
+	add	r7, r30, r29
+	rotlwi	r0, r0, 18
+	rotlwi	r5, r5, 18
+	rotlwi	r6, r6, 18
+	rotlwi	r7, r7, 18
+	xor	r16, r16, r0
+	xor	r21, r21, r5
+	xor	r26, r26, r6
+	xor	r31, r31, r7
+	add	r0, r16, r28
+	add	r5, r21, r17
+	add	r6, r26, r22
+	add	r7, r31, r27
+	rotlwi	r0, r0, 7
+	rotlwi	r5, r5, 7
+	rotlwi	r6, r6, 7
+	rotlwi	r7, r7, 7
+	xor	r20, r20, r0
+	xor	r25, r25, r5
+	xor	r30, r30, r6
+	xor	r19, r19, r7
+	
+	add	r0, r20, r16
+	add	r5, r25, r21
+	add	r6, r30, r26
+	add	r7, r19, r31
+	rotlwi	r0, r0, 9
+	rotlwi	r5, r5, 9
+	rotlwi	r6, r6, 9
+	rotlwi	r7, r7, 9
+	xor	r24, r24, r0
+	xor	r29, r29, r5
+	xor	r18, r18, r6
+	xor	r23, r23, r7
+	
+	add	r0, r24, r20
+	add	r5, r29, r25
+	add	r6, r18, r30
+	add	r7, r23, r19
+	rotlwi	r0, r0, 13
+	rotlwi	r5, r5, 13
+	rotlwi	r6, r6, 13
+	rotlwi	r7, r7, 13
+	xor	r28, r28, r0
+	xor	r17, r17, r5
+	xor	r22, r22, r6
+	xor	r27, r27, r7
+	
+	add	r0, r28, r24
+	add	r5, r17, r29
+	add	r6, r22, r18
+	add	r7, r27, r23
+	rotlwi	r0, r0, 18
+	rotlwi	r5, r5, 18
+	rotlwi	r6, r6, 18
+	rotlwi	r7, r7, 18
+	xor	r16, r16, r0
+	xor	r21, r21, r5
+	xor	r26, r26, r6
+	xor	r31, r31, r7
+	
+	add	r0, r16, r19
+	add	r5, r21, r20
+	add	r6, r26, r25
+	add	r7, r31, r30
+	rotlwi	r0, r0, 7
+	rotlwi	r5, r5, 7
+	rotlwi	r6, r6, 7
+	rotlwi	r7, r7, 7
+	xor	r17, r17, r0
+	xor	r22, r22, r5
+	xor	r27, r27, r6
+	xor	r28, r28, r7
+	
+	add	r0, r17, r16
+	add	r5, r22, r21
+	add	r6, r27, r26
+	add	r7, r28, r31
+	rotlwi	r0, r0, 9
+	rotlwi	r5, r5, 9
+	rotlwi	r6, r6, 9
+	rotlwi	r7, r7, 9
+	xor	r18, r18, r0
+	xor	r23, r23, r5
+	xor	r24, r24, r6
+	xor	r29, r29, r7
+	
+	add	r0, r18, r17
+	add	r5, r23, r22
+	add	r6, r24, r27
+	add	r7, r29, r28
+	rotlwi	r0, r0, 13
+	rotlwi	r5, r5, 13
+	rotlwi	r6, r6, 13
+	rotlwi	r7, r7, 13
+	xor	r19, r19, r0
+	xor	r20, r20, r5
+	xor	r25, r25, r6
+	xor	r30, r30, r7
+	
+	add	r0, r19, r18
+	add	r5, r20, r23
+	add	r6, r25, r24
+	add	r7, r30, r29
+	rotlwi	r0, r0, 18
+	rotlwi	r5, r5, 18
+	rotlwi	r6, r6, 18
+	rotlwi	r7, r7, 18
+	xor	r16, r16, r0
+	xor	r21, r21, r5
+	xor	r26, r26, r6
+	xor	r31, r31, r7
 	
 	lwz	r0, 40*4(r1)
 	lwz	r5, 41*4(r1)
@@ -899,7 +2153,418 @@ scrypt_core_loop2:
 	stw	r30, 38*4(r1)
 	stw	r31, 39*4(r1)
 	
-	salsa8_core
+	add	r0, r16, r28
+	add	r5, r21, r17
+	add	r6, r26, r22
+	add	r7, r31, r27
+	rotlwi	r0, r0, 7
+	rotlwi	r5, r5, 7
+	rotlwi	r6, r6, 7
+	rotlwi	r7, r7, 7
+	xor	r20, r20, r0
+	xor	r25, r25, r5
+	xor	r30, r30, r6
+	xor	r19, r19, r7
+	
+	add	r0, r20, r16
+	add	r5, r25, r21
+	add	r6, r30, r26
+	add	r7, r19, r31
+	rotlwi	r0, r0, 9
+	rotlwi	r5, r5, 9
+	rotlwi	r6, r6, 9
+	rotlwi	r7, r7, 9
+	xor	r24, r24, r0
+	xor	r29, r29, r5
+	xor	r18, r18, r6
+	xor	r23, r23, r7
+	
+	add	r0, r24, r20
+	add	r5, r29, r25
+	add	r6, r18, r30
+	add	r7, r23, r19
+	rotlwi	r0, r0, 13
+	rotlwi	r5, r5, 13
+	rotlwi	r6, r6, 13
+	rotlwi	r7, r7, 13
+	xor	r28, r28, r0
+	xor	r17, r17, r5
+	xor	r22, r22, r6
+	xor	r27, r27, r7
+	
+	add	r0, r28, r24
+	add	r5, r17, r29
+	add	r6, r22, r18
+	add	r7, r27, r23
+	rotlwi	r0, r0, 18
+	rotlwi	r5, r5, 18
+	rotlwi	r6, r6, 18
+	rotlwi	r7, r7, 18
+	xor	r16, r16, r0
+	xor	r21, r21, r5
+	xor	r26, r26, r6
+	xor	r31, r31, r7
+	
+	add	r0, r16, r19
+	add	r5, r21, r20
+	add	r6, r26, r25
+	add	r7, r31, r30
+	rotlwi	r0, r0, 7
+	rotlwi	r5, r5, 7
+	rotlwi	r6, r6, 7
+	rotlwi	r7, r7, 7
+	xor	r17, r17, r0
+	xor	r22, r22, r5
+	xor	r27, r27, r6
+	xor	r28, r28, r7
+	
+	add	r0, r17, r16
+	add	r5, r22, r21
+	add	r6, r27, r26
+	add	r7, r28, r31
+	rotlwi	r0, r0, 9
+	rotlwi	r5, r5, 9
+	rotlwi	r6, r6, 9
+	rotlwi	r7, r7, 9
+	xor	r18, r18, r0
+	xor	r23, r23, r5
+	xor	r24, r24, r6
+	xor	r29, r29, r7
+	
+	add	r0, r18, r17
+	add	r5, r23, r22
+	add	r6, r24, r27
+	add	r7, r29, r28
+	rotlwi	r0, r0, 13
+	rotlwi	r5, r5, 13
+	rotlwi	r6, r6, 13
+	rotlwi	r7, r7, 13
+	xor	r19, r19, r0
+	xor	r20, r20, r5
+	xor	r25, r25, r6
+	xor	r30, r30, r7
+	
+	add	r0, r19, r18
+	add	r5, r20, r23
+	add	r6, r25, r24
+	add	r7, r30, r29
+	rotlwi	r0, r0, 18
+	rotlwi	r5, r5, 18
+	rotlwi	r6, r6, 18
+	rotlwi	r7, r7, 18
+	xor	r16, r16, r0
+	xor	r21, r21, r5
+	xor	r26, r26, r6
+	xor	r31, r31, r7
+	add	r0, r16, r28
+	add	r5, r21, r17
+	add	r6, r26, r22
+	add	r7, r31, r27
+	rotlwi	r0, r0, 7
+	rotlwi	r5, r5, 7
+	rotlwi	r6, r6, 7
+	rotlwi	r7, r7, 7
+	xor	r20, r20, r0
+	xor	r25, r25, r5
+	xor	r30, r30, r6
+	xor	r19, r19, r7
+	
+	add	r0, r20, r16
+	add	r5, r25, r21
+	add	r6, r30, r26
+	add	r7, r19, r31
+	rotlwi	r0, r0, 9
+	rotlwi	r5, r5, 9
+	rotlwi	r6, r6, 9
+	rotlwi	r7, r7, 9
+	xor	r24, r24, r0
+	xor	r29, r29, r5
+	xor	r18, r18, r6
+	xor	r23, r23, r7
+	
+	add	r0, r24, r20
+	add	r5, r29, r25
+	add	r6, r18, r30
+	add	r7, r23, r19
+	rotlwi	r0, r0, 13
+	rotlwi	r5, r5, 13
+	rotlwi	r6, r6, 13
+	rotlwi	r7, r7, 13
+	xor	r28, r28, r0
+	xor	r17, r17, r5
+	xor	r22, r22, r6
+	xor	r27, r27, r7
+	
+	add	r0, r28, r24
+	add	r5, r17, r29
+	add	r6, r22, r18
+	add	r7, r27, r23
+	rotlwi	r0, r0, 18
+	rotlwi	r5, r5, 18
+	rotlwi	r6, r6, 18
+	rotlwi	r7, r7, 18
+	xor	r16, r16, r0
+	xor	r21, r21, r5
+	xor	r26, r26, r6
+	xor	r31, r31, r7
+	
+	add	r0, r16, r19
+	add	r5, r21, r20
+	add	r6, r26, r25
+	add	r7, r31, r30
+	rotlwi	r0, r0, 7
+	rotlwi	r5, r5, 7
+	rotlwi	r6, r6, 7
+	rotlwi	r7, r7, 7
+	xor	r17, r17, r0
+	xor	r22, r22, r5
+	xor	r27, r27, r6
+	xor	r28, r28, r7
+	
+	add	r0, r17, r16
+	add	r5, r22, r21
+	add	r6, r27, r26
+	add	r7, r28, r31
+	rotlwi	r0, r0, 9
+	rotlwi	r5, r5, 9
+	rotlwi	r6, r6, 9
+	rotlwi	r7, r7, 9
+	xor	r18, r18, r0
+	xor	r23, r23, r5
+	xor	r24, r24, r6
+	xor	r29, r29, r7
+	
+	add	r0, r18, r17
+	add	r5, r23, r22
+	add	r6, r24, r27
+	add	r7, r29, r28
+	rotlwi	r0, r0, 13
+	rotlwi	r5, r5, 13
+	rotlwi	r6, r6, 13
+	rotlwi	r7, r7, 13
+	xor	r19, r19, r0
+	xor	r20, r20, r5
+	xor	r25, r25, r6
+	xor	r30, r30, r7
+	
+	add	r0, r19, r18
+	add	r5, r20, r23
+	add	r6, r25, r24
+	add	r7, r30, r29
+	rotlwi	r0, r0, 18
+	rotlwi	r5, r5, 18
+	rotlwi	r6, r6, 18
+	rotlwi	r7, r7, 18
+	xor	r16, r16, r0
+	xor	r21, r21, r5
+	xor	r26, r26, r6
+	xor	r31, r31, r7
+	add	r0, r16, r28
+	add	r5, r21, r17
+	add	r6, r26, r22
+	add	r7, r31, r27
+	rotlwi	r0, r0, 7
+	rotlwi	r5, r5, 7
+	rotlwi	r6, r6, 7
+	rotlwi	r7, r7, 7
+	xor	r20, r20, r0
+	xor	r25, r25, r5
+	xor	r30, r30, r6
+	xor	r19, r19, r7
+	
+	add	r0, r20, r16
+	add	r5, r25, r21
+	add	r6, r30, r26
+	add	r7, r19, r31
+	rotlwi	r0, r0, 9
+	rotlwi	r5, r5, 9
+	rotlwi	r6, r6, 9
+	rotlwi	r7, r7, 9
+	xor	r24, r24, r0
+	xor	r29, r29, r5
+	xor	r18, r18, r6
+	xor	r23, r23, r7
+	
+	add	r0, r24, r20
+	add	r5, r29, r25
+	add	r6, r18, r30
+	add	r7, r23, r19
+	rotlwi	r0, r0, 13
+	rotlwi	r5, r5, 13
+	rotlwi	r6, r6, 13
+	rotlwi	r7, r7, 13
+	xor	r28, r28, r0
+	xor	r17, r17, r5
+	xor	r22, r22, r6
+	xor	r27, r27, r7
+	
+	add	r0, r28, r24
+	add	r5, r17, r29
+	add	r6, r22, r18
+	add	r7, r27, r23
+	rotlwi	r0, r0, 18
+	rotlwi	r5, r5, 18
+	rotlwi	r6, r6, 18
+	rotlwi	r7, r7, 18
+	xor	r16, r16, r0
+	xor	r21, r21, r5
+	xor	r26, r26, r6
+	xor	r31, r31, r7
+	
+	add	r0, r16, r19
+	add	r5, r21, r20
+	add	r6, r26, r25
+	add	r7, r31, r30
+	rotlwi	r0, r0, 7
+	rotlwi	r5, r5, 7
+	rotlwi	r6, r6, 7
+	rotlwi	r7, r7, 7
+	xor	r17, r17, r0
+	xor	r22, r22, r5
+	xor	r27, r27, r6
+	xor	r28, r28, r7
+	
+	add	r0, r17, r16
+	add	r5, r22, r21
+	add	r6, r27, r26
+	add	r7, r28, r31
+	rotlwi	r0, r0, 9
+	rotlwi	r5, r5, 9
+	rotlwi	r6, r6, 9
+	rotlwi	r7, r7, 9
+	xor	r18, r18, r0
+	xor	r23, r23, r5
+	xor	r24, r24, r6
+	xor	r29, r29, r7
+	
+	add	r0, r18, r17
+	add	r5, r23, r22
+	add	r6, r24, r27
+	add	r7, r29, r28
+	rotlwi	r0, r0, 13
+	rotlwi	r5, r5, 13
+	rotlwi	r6, r6, 13
+	rotlwi	r7, r7, 13
+	xor	r19, r19, r0
+	xor	r20, r20, r5
+	xor	r25, r25, r6
+	xor	r30, r30, r7
+	
+	add	r0, r19, r18
+	add	r5, r20, r23
+	add	r6, r25, r24
+	add	r7, r30, r29
+	rotlwi	r0, r0, 18
+	rotlwi	r5, r5, 18
+	rotlwi	r6, r6, 18
+	rotlwi	r7, r7, 18
+	xor	r16, r16, r0
+	xor	r21, r21, r5
+	xor	r26, r26, r6
+	xor	r31, r31, r7
+	add	r0, r16, r28
+	add	r5, r21, r17
+	add	r6, r26, r22
+	add	r7, r31, r27
+	rotlwi	r0, r0, 7
+	rotlwi	r5, r5, 7
+	rotlwi	r6, r6, 7
+	rotlwi	r7, r7, 7
+	xor	r20, r20, r0
+	xor	r25, r25, r5
+	xor	r30, r30, r6
+	xor	r19, r19, r7
+	
+	add	r0, r20, r16
+	add	r5, r25, r21
+	add	r6, r30, r26
+	add	r7, r19, r31
+	rotlwi	r0, r0, 9
+	rotlwi	r5, r5, 9
+	rotlwi	r6, r6, 9
+	rotlwi	r7, r7, 9
+	xor	r24, r24, r0
+	xor	r29, r29, r5
+	xor	r18, r18, r6
+	xor	r23, r23, r7
+	
+	add	r0, r24, r20
+	add	r5, r29, r25
+	add	r6, r18, r30
+	add	r7, r23, r19
+	rotlwi	r0, r0, 13
+	rotlwi	r5, r5, 13
+	rotlwi	r6, r6, 13
+	rotlwi	r7, r7, 13
+	xor	r28, r28, r0
+	xor	r17, r17, r5
+	xor	r22, r22, r6
+	xor	r27, r27, r7
+	
+	add	r0, r28, r24
+	add	r5, r17, r29
+	add	r6, r22, r18
+	add	r7, r27, r23
+	rotlwi	r0, r0, 18
+	rotlwi	r5, r5, 18
+	rotlwi	r6, r6, 18
+	rotlwi	r7, r7, 18
+	xor	r16, r16, r0
+	xor	r21, r21, r5
+	xor	r26, r26, r6
+	xor	r31, r31, r7
+	
+	add	r0, r16, r19
+	add	r5, r21, r20
+	add	r6, r26, r25
+	add	r7, r31, r30
+	rotlwi	r0, r0, 7
+	rotlwi	r5, r5, 7
+	rotlwi	r6, r6, 7
+	rotlwi	r7, r7, 7
+	xor	r17, r17, r0
+	xor	r22, r22, r5
+	xor	r27, r27, r6
+	xor	r28, r28, r7
+	
+	add	r0, r17, r16
+	add	r5, r22, r21
+	add	r6, r27, r26
+	add	r7, r28, r31
+	rotlwi	r0, r0, 9
+	rotlwi	r5, r5, 9
+	rotlwi	r6, r6, 9
+	rotlwi	r7, r7, 9
+	xor	r18, r18, r0
+	xor	r23, r23, r5
+	xor	r24, r24, r6
+	xor	r29, r29, r7
+	
+	add	r0, r18, r17
+	add	r5, r23, r22
+	add	r6, r24, r27
+	add	r7, r29, r28
+	rotlwi	r0, r0, 13
+	rotlwi	r5, r5, 13
+	rotlwi	r6, r6, 13
+	rotlwi	r7, r7, 13
+	xor	r19, r19, r0
+	xor	r20, r20, r5
+	xor	r25, r25, r6
+	xor	r30, r30, r7
+	
+	add	r0, r19, r18
+	add	r5, r20, r23
+	add	r6, r25, r24
+	add	r7, r30, r29
+	rotlwi	r0, r0, 18
+	rotlwi	r5, r5, 18
+	rotlwi	r6, r6, 18
+	rotlwi	r7, r7, 18
+	xor	r16, r16, r0
+	xor	r21, r21, r5
+	xor	r26, r26, r6
+	xor	r31, r31, r7
 	
 	lwz	r0, 24*4(r1)
 	lwz	r5, 25*4(r1)
@@ -1025,7 +2690,418 @@ scrypt_core_loop2:
 	mr	r14, r30
 	mr	r15, r31
 	
-	salsa8_core
+	add	r0, r16, r28
+	add	r5, r21, r17
+	add	r6, r26, r22
+	add	r7, r31, r27
+	rotlwi	r0, r0, 7
+	rotlwi	r5, r5, 7
+	rotlwi	r6, r6, 7
+	rotlwi	r7, r7, 7
+	xor	r20, r20, r0
+	xor	r25, r25, r5
+	xor	r30, r30, r6
+	xor	r19, r19, r7
+	
+	add	r0, r20, r16
+	add	r5, r25, r21
+	add	r6, r30, r26
+	add	r7, r19, r31
+	rotlwi	r0, r0, 9
+	rotlwi	r5, r5, 9
+	rotlwi	r6, r6, 9
+	rotlwi	r7, r7, 9
+	xor	r24, r24, r0
+	xor	r29, r29, r5
+	xor	r18, r18, r6
+	xor	r23, r23, r7
+	
+	add	r0, r24, r20
+	add	r5, r29, r25
+	add	r6, r18, r30
+	add	r7, r23, r19
+	rotlwi	r0, r0, 13
+	rotlwi	r5, r5, 13
+	rotlwi	r6, r6, 13
+	rotlwi	r7, r7, 13
+	xor	r28, r28, r0
+	xor	r17, r17, r5
+	xor	r22, r22, r6
+	xor	r27, r27, r7
+	
+	add	r0, r28, r24
+	add	r5, r17, r29
+	add	r6, r22, r18
+	add	r7, r27, r23
+	rotlwi	r0, r0, 18
+	rotlwi	r5, r5, 18
+	rotlwi	r6, r6, 18
+	rotlwi	r7, r7, 18
+	xor	r16, r16, r0
+	xor	r21, r21, r5
+	xor	r26, r26, r6
+	xor	r31, r31, r7
+	
+	add	r0, r16, r19
+	add	r5, r21, r20
+	add	r6, r26, r25
+	add	r7, r31, r30
+	rotlwi	r0, r0, 7
+	rotlwi	r5, r5, 7
+	rotlwi	r6, r6, 7
+	rotlwi	r7, r7, 7
+	xor	r17, r17, r0
+	xor	r22, r22, r5
+	xor	r27, r27, r6
+	xor	r28, r28, r7
+	
+	add	r0, r17, r16
+	add	r5, r22, r21
+	add	r6, r27, r26
+	add	r7, r28, r31
+	rotlwi	r0, r0, 9
+	rotlwi	r5, r5, 9
+	rotlwi	r6, r6, 9
+	rotlwi	r7, r7, 9
+	xor	r18, r18, r0
+	xor	r23, r23, r5
+	xor	r24, r24, r6
+	xor	r29, r29, r7
+	
+	add	r0, r18, r17
+	add	r5, r23, r22
+	add	r6, r24, r27
+	add	r7, r29, r28
+	rotlwi	r0, r0, 13
+	rotlwi	r5, r5, 13
+	rotlwi	r6, r6, 13
+	rotlwi	r7, r7, 13
+	xor	r19, r19, r0
+	xor	r20, r20, r5
+	xor	r25, r25, r6
+	xor	r30, r30, r7
+	
+	add	r0, r19, r18
+	add	r5, r20, r23
+	add	r6, r25, r24
+	add	r7, r30, r29
+	rotlwi	r0, r0, 18
+	rotlwi	r5, r5, 18
+	rotlwi	r6, r6, 18
+	rotlwi	r7, r7, 18
+	xor	r16, r16, r0
+	xor	r21, r21, r5
+	xor	r26, r26, r6
+	xor	r31, r31, r7
+	add	r0, r16, r28
+	add	r5, r21, r17
+	add	r6, r26, r22
+	add	r7, r31, r27
+	rotlwi	r0, r0, 7
+	rotlwi	r5, r5, 7
+	rotlwi	r6, r6, 7
+	rotlwi	r7, r7, 7
+	xor	r20, r20, r0
+	xor	r25, r25, r5
+	xor	r30, r30, r6
+	xor	r19, r19, r7
+	
+	add	r0, r20, r16
+	add	r5, r25, r21
+	add	r6, r30, r26
+	add	r7, r19, r31
+	rotlwi	r0, r0, 9
+	rotlwi	r5, r5, 9
+	rotlwi	r6, r6, 9
+	rotlwi	r7, r7, 9
+	xor	r24, r24, r0
+	xor	r29, r29, r5
+	xor	r18, r18, r6
+	xor	r23, r23, r7
+	
+	add	r0, r24, r20
+	add	r5, r29, r25
+	add	r6, r18, r30
+	add	r7, r23, r19
+	rotlwi	r0, r0, 13
+	rotlwi	r5, r5, 13
+	rotlwi	r6, r6, 13
+	rotlwi	r7, r7, 13
+	xor	r28, r28, r0
+	xor	r17, r17, r5
+	xor	r22, r22, r6
+	xor	r27, r27, r7
+	
+	add	r0, r28, r24
+	add	r5, r17, r29
+	add	r6, r22, r18
+	add	r7, r27, r23
+	rotlwi	r0, r0, 18
+	rotlwi	r5, r5, 18
+	rotlwi	r6, r6, 18
+	rotlwi	r7, r7, 18
+	xor	r16, r16, r0
+	xor	r21, r21, r5
+	xor	r26, r26, r6
+	xor	r31, r31, r7
+	
+	add	r0, r16, r19
+	add	r5, r21, r20
+	add	r6, r26, r25
+	add	r7, r31, r30
+	rotlwi	r0, r0, 7
+	rotlwi	r5, r5, 7
+	rotlwi	r6, r6, 7
+	rotlwi	r7, r7, 7
+	xor	r17, r17, r0
+	xor	r22, r22, r5
+	xor	r27, r27, r6
+	xor	r28, r28, r7
+	
+	add	r0, r17, r16
+	add	r5, r22, r21
+	add	r6, r27, r26
+	add	r7, r28, r31
+	rotlwi	r0, r0, 9
+	rotlwi	r5, r5, 9
+	rotlwi	r6, r6, 9
+	rotlwi	r7, r7, 9
+	xor	r18, r18, r0
+	xor	r23, r23, r5
+	xor	r24, r24, r6
+	xor	r29, r29, r7
+	
+	add	r0, r18, r17
+	add	r5, r23, r22
+	add	r6, r24, r27
+	add	r7, r29, r28
+	rotlwi	r0, r0, 13
+	rotlwi	r5, r5, 13
+	rotlwi	r6, r6, 13
+	rotlwi	r7, r7, 13
+	xor	r19, r19, r0
+	xor	r20, r20, r5
+	xor	r25, r25, r6
+	xor	r30, r30, r7
+	
+	add	r0, r19, r18
+	add	r5, r20, r23
+	add	r6, r25, r24
+	add	r7, r30, r29
+	rotlwi	r0, r0, 18
+	rotlwi	r5, r5, 18
+	rotlwi	r6, r6, 18
+	rotlwi	r7, r7, 18
+	xor	r16, r16, r0
+	xor	r21, r21, r5
+	xor	r26, r26, r6
+	xor	r31, r31, r7
+	add	r0, r16, r28
+	add	r5, r21, r17
+	add	r6, r26, r22
+	add	r7, r31, r27
+	rotlwi	r0, r0, 7
+	rotlwi	r5, r5, 7
+	rotlwi	r6, r6, 7
+	rotlwi	r7, r7, 7
+	xor	r20, r20, r0
+	xor	r25, r25, r5
+	xor	r30, r30, r6
+	xor	r19, r19, r7
+	
+	add	r0, r20, r16
+	add	r5, r25, r21
+	add	r6, r30, r26
+	add	r7, r19, r31
+	rotlwi	r0, r0, 9
+	rotlwi	r5, r5, 9
+	rotlwi	r6, r6, 9
+	rotlwi	r7, r7, 9
+	xor	r24, r24, r0
+	xor	r29, r29, r5
+	xor	r18, r18, r6
+	xor	r23, r23, r7
+	
+	add	r0, r24, r20
+	add	r5, r29, r25
+	add	r6, r18, r30
+	add	r7, r23, r19
+	rotlwi	r0, r0, 13
+	rotlwi	r5, r5, 13
+	rotlwi	r6, r6, 13
+	rotlwi	r7, r7, 13
+	xor	r28, r28, r0
+	xor	r17, r17, r5
+	xor	r22, r22, r6
+	xor	r27, r27, r7
+	
+	add	r0, r28, r24
+	add	r5, r17, r29
+	add	r6, r22, r18
+	add	r7, r27, r23
+	rotlwi	r0, r0, 18
+	rotlwi	r5, r5, 18
+	rotlwi	r6, r6, 18
+	rotlwi	r7, r7, 18
+	xor	r16, r16, r0
+	xor	r21, r21, r5
+	xor	r26, r26, r6
+	xor	r31, r31, r7
+	
+	add	r0, r16, r19
+	add	r5, r21, r20
+	add	r6, r26, r25
+	add	r7, r31, r30
+	rotlwi	r0, r0, 7
+	rotlwi	r5, r5, 7
+	rotlwi	r6, r6, 7
+	rotlwi	r7, r7, 7
+	xor	r17, r17, r0
+	xor	r22, r22, r5
+	xor	r27, r27, r6
+	xor	r28, r28, r7
+	
+	add	r0, r17, r16
+	add	r5, r22, r21
+	add	r6, r27, r26
+	add	r7, r28, r31
+	rotlwi	r0, r0, 9
+	rotlwi	r5, r5, 9
+	rotlwi	r6, r6, 9
+	rotlwi	r7, r7, 9
+	xor	r18, r18, r0
+	xor	r23, r23, r5
+	xor	r24, r24, r6
+	xor	r29, r29, r7
+	
+	add	r0, r18, r17
+	add	r5, r23, r22
+	add	r6, r24, r27
+	add	r7, r29, r28
+	rotlwi	r0, r0, 13
+	rotlwi	r5, r5, 13
+	rotlwi	r6, r6, 13
+	rotlwi	r7, r7, 13
+	xor	r19, r19, r0
+	xor	r20, r20, r5
+	xor	r25, r25, r6
+	xor	r30, r30, r7
+	
+	add	r0, r19, r18
+	add	r5, r20, r23
+	add	r6, r25, r24
+	add	r7, r30, r29
+	rotlwi	r0, r0, 18
+	rotlwi	r5, r5, 18
+	rotlwi	r6, r6, 18
+	rotlwi	r7, r7, 18
+	xor	r16, r16, r0
+	xor	r21, r21, r5
+	xor	r26, r26, r6
+	xor	r31, r31, r7
+	add	r0, r16, r28
+	add	r5, r21, r17
+	add	r6, r26, r22
+	add	r7, r31, r27
+	rotlwi	r0, r0, 7
+	rotlwi	r5, r5, 7
+	rotlwi	r6, r6, 7
+	rotlwi	r7, r7, 7
+	xor	r20, r20, r0
+	xor	r25, r25, r5
+	xor	r30, r30, r6
+	xor	r19, r19, r7
+	
+	add	r0, r20, r16
+	add	r5, r25, r21
+	add	r6, r30, r26
+	add	r7, r19, r31
+	rotlwi	r0, r0, 9
+	rotlwi	r5, r5, 9
+	rotlwi	r6, r6, 9
+	rotlwi	r7, r7, 9
+	xor	r24, r24, r0
+	xor	r29, r29, r5
+	xor	r18, r18, r6
+	xor	r23, r23, r7
+	
+	add	r0, r24, r20
+	add	r5, r29, r25
+	add	r6, r18, r30
+	add	r7, r23, r19
+	rotlwi	r0, r0, 13
+	rotlwi	r5, r5, 13
+	rotlwi	r6, r6, 13
+	rotlwi	r7, r7, 13
+	xor	r28, r28, r0
+	xor	r17, r17, r5
+	xor	r22, r22, r6
+	xor	r27, r27, r7
+	
+	add	r0, r28, r24
+	add	r5, r17, r29
+	add	r6, r22, r18
+	add	r7, r27, r23
+	rotlwi	r0, r0, 18
+	rotlwi	r5, r5, 18
+	rotlwi	r6, r6, 18
+	rotlwi	r7, r7, 18
+	xor	r16, r16, r0
+	xor	r21, r21, r5
+	xor	r26, r26, r6
+	xor	r31, r31, r7
+	
+	add	r0, r16, r19
+	add	r5, r21, r20
+	add	r6, r26, r25
+	add	r7, r31, r30
+	rotlwi	r0, r0, 7
+	rotlwi	r5, r5, 7
+	rotlwi	r6, r6, 7
+	rotlwi	r7, r7, 7
+	xor	r17, r17, r0
+	xor	r22, r22, r5
+	xor	r27, r27, r6
+	xor	r28, r28, r7
+	
+	add	r0, r17, r16
+	add	r5, r22, r21
+	add	r6, r27, r26
+	add	r7, r28, r31
+	rotlwi	r0, r0, 9
+	rotlwi	r5, r5, 9
+	rotlwi	r6, r6, 9
+	rotlwi	r7, r7, 9
+	xor	r18, r18, r0
+	xor	r23, r23, r5
+	xor	r24, r24, r6
+	xor	r29, r29, r7
+	
+	add	r0, r18, r17
+	add	r5, r23, r22
+	add	r6, r24, r27
+	add	r7, r29, r28
+	rotlwi	r0, r0, 13
+	rotlwi	r5, r5, 13
+	rotlwi	r6, r6, 13
+	rotlwi	r7, r7, 13
+	xor	r19, r19, r0
+	xor	r20, r20, r5
+	xor	r25, r25, r6
+	xor	r30, r30, r7
+	
+	add	r0, r19, r18
+	add	r5, r20, r23
+	add	r6, r25, r24
+	add	r7, r30, r29
+	rotlwi	r0, r0, 18
+	rotlwi	r5, r5, 18
+	rotlwi	r6, r6, 18
+	rotlwi	r7, r7, 18
+	xor	r16, r16, r0
+	xor	r21, r21, r5
+	xor	r26, r26, r6
+	xor	r31, r31, r7
 	
 	lwz	r0, 40*4(r1)
 	lwz	r5, 41*4(r1)
