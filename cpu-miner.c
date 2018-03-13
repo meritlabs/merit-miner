@@ -609,7 +609,7 @@ static bool gbt_work_decode(const json_t *val, struct work *work)
 	work->data[17] = swab32(curtime);
 	work->data[18] = le32dec(&bits);
 	memset(work->data + 19, 0x00, 52);
-	work->data[20] = edgebits;
+	work->data[20] = (edgebits << 23) & (1 << 22);
 	work->data[21] = 0x80000000;
 	work->data[31] = 0x00000280;
 
@@ -1077,7 +1077,7 @@ static void stratum_gen_work(struct stratum_ctx *sctx, struct work *work)
 	work->data[18] = le32dec(sctx->job.nbits);
 	// move one byte of edgebits to the end of the message
 	// followed by "1" bit
-	work->data[20] = (*sctx->job.nedgebits << 23) & (1 << 22);
+	work->data[20] = (*sctx->job.nedgebits << 23) | (1 << 22);
 	// lenth of the message in bits
 	work->data[31] = 0x00000281;
 
@@ -1189,7 +1189,7 @@ static void *miner_thread(void *userdata)
 		}
 		bin2hex(target_str, (unsigned char *)target_be, 32);
 
-		applog(LOG_INFO, "before scanhash; nonce = %d, edgebits = %d; max_nonce = %d", work.data[19], work.data[20], max_nonce);
+		applog(LOG_INFO, "before scanhash; nonce = %d, edgebits = %d; max_nonce = %d", work.data[19], work.data[20] >> 23, max_nonce);
 		applog(LOG_INFO, "target = %s", target_str);
 
 		/* scan nonces for a proof-of-work hash */

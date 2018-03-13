@@ -10,11 +10,13 @@ dnl Make sure anyone changing configure.ac/Makefile.am has a clue
 AM_MAINTAINER_MODE
 
 dnl Checks for programs
+AC_PROG_CXX
 AC_PROG_CC_C99
 AC_PROG_GCC_TRADITIONAL
-AM_PROG_CC_C_O
 AM_PROG_AS
 AC_PROG_RANLIB
+
+AX_CXX_COMPILE_STDCXX_11(noext,mandatory)
 
 dnl Checks for header files
 AC_HEADER_STDC
@@ -128,8 +130,15 @@ AC_SUBST(PTHREAD_FLAGS)
 AC_SUBST(PTHREAD_LIBS)
 AC_SUBST(WS2_LIBS)
 
+AM_CONDITIONAL(DEBUG, test x"$debug" = x"true")
+AM_COND_IF(DEBUG,
+    AC_DEFINE(DEBUG, 1, [Define to 0 if this is a release build]),
+    AC_DEFINE(DEBUG, 0, [Define to 1 or higher if this is a debug build]))
+
+
 AC_CONFIG_FILES([
 	Makefile
+	cuckoo/Makefile
 	compat/Makefile
 	compat/jansson/Makefile
 	])

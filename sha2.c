@@ -9,6 +9,7 @@
  */
 
 #include "cpuminer-config.h"
+#include "cuckoo.h"
 #include "miner.h"
 
 #include <string.h>
@@ -600,8 +601,12 @@ int scanhash_sha256d(int thr_id, uint32_t *pdata, const uint32_t *ptarget,
 	uint32_t midstate[8] __attribute__((aligned(32)));
 	uint32_t prehash[8] __attribute__((aligned(32)));
 	uint32_t n = pdata[19] - 1;
+	uint8_t edgebits = pdata[20] >> 23;
 	const uint32_t first_nonce = pdata[19];
 	const uint32_t Htarg = ptarget[7];
+	uint32_t cycle[42];
+
+	const char* shash = "26324790d26e15c0da01538db8ffa73467b3de3d4f23bf8dac3b777a55836bdc";
 
 #ifdef HAVE_SHA256_8WAY
 	if (sha256_use_8way())
@@ -626,9 +631,16 @@ int scanhash_sha256d(int thr_id, uint32_t *pdata, const uint32_t *ptarget,
 		data[3] = ++n;
 		sha256d_ms(hash, data, midstate, prehash);
 
+
 		if (swab32(hash[7]) <= Htarg) {
 			pdata[19] = data[3];
 			sha256d_80_swap(hash, pdata);
+			bool cycleFound = findcycle(hash, edgebits, 42, cycle);
+
+			if (!cycleFound) {
+				continue;
+			}
+
 			if (fulltest(hash, ptarget)) {
 				*hashes_done = n - first_nonce + 1;
 				return 1;

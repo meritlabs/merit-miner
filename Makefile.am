@@ -5,15 +5,18 @@ else
 JANSSON_INCLUDES=
 endif
 
+CUCKOO_INCLUDES = -I$(top_srcdir)/cuckoo
+
 EXTRA_DIST	= example-cfg.json nomacro.pl
 
-SUBDIRS		= compat
+SUBDIRS		= compat cuckoo
 
 bin_PROGRAMS	= minerd
 
 dist_man_MANS	= minerd.1
 
 minerd_SOURCES	= elist.h miner.h compat.h \
+			cuckoo.h \
 		  cpu-miner.c util.c \
 		  sha2.c scrypt.c
 if USE_ASM
@@ -31,7 +34,7 @@ minerd_SOURCES += sha2-ppc.S scrypt-ppc.S
 endif
 endif
 minerd_LDFLAGS	= $(PTHREAD_FLAGS)
-minerd_LDADD	= @LIBCURL@ @JANSSON_LIBS@ @PTHREAD_LIBS@ @WS2_LIBS@
+minerd_LDADD	= $(top_srcdir)/cuckoo/libcuckoo.a @LIBCURL@ @JANSSON_LIBS@ @PTHREAD_LIBS@ @WS2_LIBS@ $(AM_LDFLAGS) -lstdc++
 minerd_CFLAGS	= -fno-strict-aliasing
-minerd_CPPFLAGS	= @LIBCURL_CPPFLAGS@ $(JANSSON_INCLUDES) $(PTHREAD_FLAGS)
+minerd_CPPFLAGS	= @LIBCURL_CPPFLAGS@ $(JANSSON_INCLUDES) $(CUCKOO_INCLUDES) $(PTHREAD_FLAGS)
 ACLOCAL_AMFLAGS = -I m4

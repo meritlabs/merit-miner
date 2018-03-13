@@ -69,3 +69,7 @@ and all_proxy environment variables.
 Also many issues and FAQs are covered in the forum thread
 dedicated to this program,
 	https://bitcointalk.org/index.php?topic=55038.0
+
+### Exmaple usage with stratus server:
+
+`./minerd -o stratum+tcp://127.0.0.1:3333 -u tony -D -t 1`
