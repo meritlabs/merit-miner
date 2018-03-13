@@ -2,9 +2,10 @@
 // Copyright (c) 2013-2017 John Tromp
 // Copyright (c) 2017-2018 The Merit Foundation developers
 
-#ifndef MERIT_CUCKOO_CUCKOO_H
-#define MERIT_CUCKOO_CUCKOO_H
+#ifndef MERIT_MINER_CUCKOO_H
+#define MERIT_MINER_CUCKOO_H
 
+#include "ctpl/ctpl.h"
 #include <set>
 
 enum verify_code {
@@ -20,7 +21,8 @@ enum verify_code {
 
 extern const char* errstr[];
 
-// Find proofsize-length cuckoo cycle in random graph
-bool FindCycle(const uint32_t* hash, uint8_t edgeBits, uint8_t proofSize, std::set<uint32_t>& cycle);
 
-#endif // MERIT_CUCKOO_CUCKOO_H
+// Find proofsize-length cuckoo cycle in random graph
+bool FindCycleAdvanced(const uint32_t& hash, uint8_t edgeBits, uint8_t proofSize, std::set<uint32_t>& cycle, ctpl::thread_pool&);
+
+#endif // MERIT_MINER_CUCKOO_H
