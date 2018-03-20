@@ -78,9 +78,11 @@ static const uint16_t MIN_EDGE_BITS = 16;
 static const uint16_t MAX_EDGE_BITS = 31;
 
 // convenience function for extracting siphash keys from header
-void setHeader(const uint32_t *header, const uint32_t headerlen, siphash_keys *keys)
+void setHeader(const char *header, const uint32_t headerlen, siphash_keys *keys)
 {
     char hdrkey[32];
+    // printf("header len: %d\n", headerlen);
+
     // SHA256((unsigned char *)header, headerlen, (unsigned char *)hdrkey);
     blake2b((void *)hdrkey, sizeof(hdrkey), (const void *)header, headerlen, 0, 0);
     setkeys(keys, hdrkey);
@@ -1077,7 +1079,7 @@ class solver_ctx
 
     solver_ctx(
         ctpl::thread_pool &poolIn,
-        const uint32_t *header,
+        const char *header,
         const uint32_t headerlen,
         const uint32_t nTrims,
         const uint8_t proofSizeIn) : pool{poolIn}, proofSize{proofSizeIn}
@@ -1344,13 +1346,13 @@ class solver_ctx
 };
 
 template <typename offset_t, uint8_t EDGEBITS, uint8_t XBITS>
-bool run(const uint32_t *hash, uint8_t proofSize, std::set<uint32_t> &cycle, ctpl::thread_pool &pool)
+bool run(const char *hash, uint8_t proofSize, std::set<uint32_t> &cycle, ctpl::thread_pool &pool)
 {
     assert(EDGEBITS >= MIN_EDGE_BITS && EDGEBITS <= MAX_EDGE_BITS);
 
     uint32_t nTrims = EDGEBITS >= 30 ? 96 : 68;
 
-    solver_ctx<offset_t, EDGEBITS, XBITS> ctx(pool, hash, 32, nTrims, proofSize);
+    solver_ctx<offset_t, EDGEBITS, XBITS> ctx(pool, hash, 64, nTrims, proofSize);
 
     bool found = ctx.solve();
 
@@ -1361,7 +1363,7 @@ bool run(const uint32_t *hash, uint8_t proofSize, std::set<uint32_t> &cycle, ctp
     return found;
 }
 
-bool FindCycle(const uint32_t *hash, uint8_t edgeBits, uint8_t proofSize, std::set<uint32_t> &cycle, ctpl::thread_pool &pool)
+bool FindCycle(const char *hash, uint8_t edgeBits, uint8_t proofSize, std::set<uint32_t> &cycle, ctpl::thread_pool &pool)
 {
     switch (edgeBits)
     {
@@ -1406,10 +1408,10 @@ bool FindCycle(const uint32_t *hash, uint8_t edgeBits, uint8_t proofSize, std::s
 }
 
 extern "C" {
-bool findcycle(const uint32_t *hash, uint8_t edgeBits, uint8_t proofSize, uint32_t *cycle)
+bool findcycle(const char* hash, uint8_t edgeBits, uint8_t proofSize, uint32_t *cycle)
 {
     std::set<uint32_t> sCycle;
-    ctpl::thread_pool pool{4};
+    ctpl::thread_pool pool{2};
 
     FindCycle(hash, edgeBits, proofSize, sCycle, pool);
 

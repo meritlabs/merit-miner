@@ -152,7 +152,7 @@ void sha256_transform_8way(uint32_t *state, const uint32_t *block, int swap);
 #endif
 
 extern int scanhash_sha256d(int thr_id, uint32_t *pdata,
-	const uint32_t *ptarget, uint32_t max_nonce, unsigned long *hashes_done);
+	const uint32_t *ptarget, uint32_t *cycle, uint32_t max_nonce, unsigned long *hashes_done);
 
 extern unsigned char *scrypt_buffer_alloc(int N);
 extern int scanhash_scrypt(int thr_id, uint32_t *pdata,

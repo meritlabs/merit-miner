@@ -741,7 +741,7 @@ bool fulltest(const uint32_t *hash, const uint32_t *target)
 		char hash_str[65], target_str[65];
 
 		for (i = 0; i < 8; i++) {
-			be32enc(hash_be + i, hash[7 - i]);
+			le32enc(hash_be + i, hash[7 - i]);
 			be32enc(target_be + i, target[7 - i]);
 		}
 		bin2hex(hash_str, (unsigned char *)hash_be, 32);

@@ -36,6 +36,7 @@
 #include <jansson.h>
 #include <curl/curl.h>
 #include "compat.h"
+#include "cuckoo.h"
 #include "miner.h"
 
 #define PROGRAM_NAME		"minerd"
@@ -242,6 +243,7 @@ static struct option const options[] = {
 struct work {
 	uint32_t data[32];
 	uint32_t target[8];
+	uint32_t cycle[CUCKOO_CYCLE_LENGTH];
 
 	int height;
 	char *txs;
@@ -610,8 +612,7 @@ static bool gbt_work_decode(const json_t *val, struct work *work)
 	work->data[18] = le32dec(&bits);
 	memset(work->data + 19, 0x00, 52);
 	work->data[20] = (edgebits << 23) & (1 << 22);
-	work->data[21] = 0x80000000;
-	work->data[31] = 0x00000280;
+	work->data[31] = 0x00000288;
 
 	if (unlikely(!jobj_binary(val, "target", target, sizeof(target)))) {
 		applog(LOG_ERR, "JSON invalid target");
@@ -700,10 +701,38 @@ static bool submit_upstream_work(CURL *curl, struct work *work)
 		bin2hex(ntimestr, (const unsigned char *)(&ntime), 4);
 		bin2hex(noncestr, (const unsigned char *)(&nonce), 4);
 		xnonce2str = abin2hex(work->xnonce2, work->xnonce2_len);
-		req = malloc(256 + strlen(rpc_user) + strlen(work->job_id) + 2 * work->xnonce2_len);
+		// max length of hex encoded edges + commas
+		int cycle_str_length = (32 / 4 + 1) * CUCKOO_CYCLE_LENGTH - 1;
+		req = malloc(256 + cycle_str_length + strlen(rpc_user) + strlen(work->job_id) + 2 * work->xnonce2_len);
+		char str_cycle[cycle_str_length];
+		for (int i = 0; i < CUCKOO_CYCLE_LENGTH; i++) {
+			sprintf(str_cycle, "%s%s%x", str_cycle, i > 0 ? "," : "", work->cycle[i]);
+		}
+
+		// uint32_t hash_be[8];
+		// char hash_str[65];
+
+		// for (i = 0; i < 8; i++) {
+		// 	be32enc(hash_be + i, hash[7 - i]);
+		// }
+
+		// bin2hex(hash_str, (unsigned char *)hash_be, 32);
+
+		// applog(LOG_DEBUG, "DEBUG: %s\nHash:   %s\nTarget: %s",
+		// 	rc ? "hash <= target"
+		// 	   : "hash > target (false positive)",
+		// 	hash_str,
+		// 	target_str);
+
+		// applog(LOG_INFO, "hash  to send: %s", hash_str);
+		applog(LOG_INFO, "");
+		applog(LOG_INFO, "nonce to send: %lu", work->data[19]);
+		applog(LOG_INFO, "cycle to send: %s", str_cycle);
+		applog(LOG_INFO, "");
+
 		sprintf(req,
-			"{\"method\": \"mining.submit\", \"params\": [\"%s\", \"%s\", \"%s\", \"%s\", \"%s\"], \"id\":4}",
-			rpc_user, work->job_id, xnonce2str, ntimestr, noncestr);
+			"{\"method\": \"mining.submit\", \"params\": [\"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\"], \"id\":4}",
+			rpc_user, work->job_id, xnonce2str, ntimestr, noncestr, str_cycle);
 		free(xnonce2str);
 
 		rc = stratum_send_line(&stratum, req);
@@ -983,8 +1012,9 @@ static bool get_work(struct thr_info *thr, struct work *work)
 		memset(work->data, 0x55, 76);
 		work->data[17] = swab32(time(NULL));
 		memset(work->data + 19, 0x00, 52);
-		work->data[21] = 0x80000000;
-		work->data[31] = 0x00000280;
+		// edgebits should be set here
+		// work->data[20] = 24;
+		work->data[31] = 0x00000288;
 		memset(work->target, 0x00, sizeof(work->target));
 		return true;
 	}
@@ -1077,11 +1107,12 @@ static void stratum_gen_work(struct stratum_ctx *sctx, struct work *work)
 	work->data[18] = le32dec(sctx->job.nbits);
 	// move one byte of edgebits to the end of the message
 	// followed by "1" bit
-	work->data[20] = (*sctx->job.nedgebits << 23) | (1 << 22);
+	work->data[20] = (*sctx->job.nedgebits << 24) | (1 << 23);
 	// lenth of the message in bits
-	work->data[31] = 0x00000281;
+	work->data[31] = 0x00000288;
 
 	pthread_mutex_unlock(&sctx->work_lock);
+	applog(LOG_INFO, "DEBUG: work->data[20]=%x", work->data[20]);
 
 	if (opt_debug) {
 		char *xnonce2str = abin2hex(work->xnonce2, work->xnonce2_len);
@@ -1189,11 +1220,11 @@ static void *miner_thread(void *userdata)
 		}
 		bin2hex(target_str, (unsigned char *)target_be, 32);
 
-		applog(LOG_INFO, "before scanhash; nonce = %d, edgebits = %d; max_nonce = %d", work.data[19], work.data[20] >> 23, max_nonce);
+		applog(LOG_INFO, "before scanhash; nonce = %lu, edgebits = %d; max_nonce = %lu", work.data[19], work.data[20] >> 24, max_nonce);
 		applog(LOG_INFO, "target = %s", target_str);
 
 		/* scan nonces for a proof-of-work hash */
-		rc = scanhash_sha256d(thr_id, work.data, work.target, max_nonce, &hashes_done);
+		rc = scanhash_sha256d(thr_id, work.data, work.target, work.cycle, max_nonce, &hashes_done);
 
 		applog(LOG_INFO, "after scanhash");
 

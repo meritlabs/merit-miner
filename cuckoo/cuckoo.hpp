@@ -23,6 +23,6 @@ extern const char* errstr[];
 
 
 // Find proofsize-length cuckoo cycle in random graph
-bool FindCycleAdvanced(const uint32_t& hash, uint8_t edgeBits, uint8_t proofSize, std::set<uint32_t>& cycle, ctpl::thread_pool&);
+bool FindCycleAdvanced(const char *hash, uint8_t edgeBits, uint8_t proofSize, std::set<uint32_t>& cycle, ctpl::thread_pool&);
 
 #endif // MERIT_MINER_CUCKOO_H
