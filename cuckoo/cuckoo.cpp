@@ -1408,10 +1408,10 @@ bool FindCycle(const char *hash, uint8_t edgeBits, uint8_t proofSize, std::set<u
 }
 
 extern "C" {
-bool findcycle(const char* hash, uint8_t edgeBits, uint8_t proofSize, uint32_t *cycle)
+bool findcycle(const char* hash, uint8_t edgeBits, uint8_t proofSize, uint32_t *cycle, int threads)
 {
     std::set<uint32_t> sCycle;
-    ctpl::thread_pool pool{2};
+    ctpl::thread_pool pool{threads};
 
     FindCycle(hash, edgeBits, proofSize, sCycle, pool);
 

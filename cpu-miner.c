@@ -120,6 +120,7 @@ int opt_timeout = 0;
 static int opt_scantime = 5;
 static int opt_scrypt_n = 1024;
 static int opt_n_threads;
+static int opt_n_cuckoo_threads;
 static int num_processors;
 static char *rpc_url;
 static char *rpc_userpass;
@@ -158,29 +159,30 @@ struct option {
 static char const usage[] = "\
 Usage: " PROGRAM_NAME " [OPTIONS]\n\
 Options:\n\
-  -o, --url=URL         URL of mining server\n\
-  -O, --userpass=U:P    username:password pair for mining server\n\
-  -u, --user=USERNAME   username for mining server\n\
-  -p, --pass=PASSWORD   password for mining server\n\
-      --cert=FILE       certificate for mining server using SSL\n\
+  -o, --url=URL          URL of mining server\n\
+  -O, --userpass=U:P     username:password pair for mining server\n\
+  -u, --user=USERNAME    username for mining server\n\
+  -p, --pass=PASSWORD    password for mining server\n\
+      --cert=FILE        certificate for mining server using SSL\n\
   -x, --proxy=[PROTOCOL://]HOST[:PORT]  connect through a proxy\n\
-  -t, --threads=N       number of miner threads (default: number of processors)\n\
-  -r, --retries=N       number of times to retry if a network call fails\n\
+  -t, --threads=N        number of miner threads (default: number of processors)\n\
+  -C, --cuckoo-threads=N number of threads used by cuckoo attempt (default: 1)\n\
+  -r, --retries=N        number of times to retry if a network call fails\n\
                           (default: retry indefinitely)\n\
-  -R, --retry-pause=N   time to pause between retries, in seconds (default: 30)\n\
-  -T, --timeout=N       timeout for long polling, in seconds (default: none)\n\
-  -s, --scantime=N      upper bound on time spent scanning current work when\n\
+  -R, --retry-pause=N    time to pause between retries, in seconds (default: 30)\n\
+  -T, --timeout=N        timeout for long polling, in seconds (default: none)\n\
+  -s, --scantime=N       upper bound on time spent scanning current work when\n\
                           long polling is unavailable, in seconds (default: 5)\n\
       --coinbase-addr=ADDR  payout address for solo mining\n\
       --coinbase-sig=TEXT  data to insert in the coinbase when possible\n\
-      --no-longpoll     disable long polling support\n\
-      --no-getwork      disable getwork support\n\
-      --no-gbt          disable getblocktemplate support\n\
-      --no-stratum      disable X-Stratum support\n\
-      --no-redirect     ignore requests to change the URL of the mining server\n\
-  -q, --quiet           disable per-thread hashmeter output\n\
-  -D, --debug           enable debug output\n\
-  -P, --protocol-dump   verbose dump of protocol-level activities\n"
+      --no-longpoll      disable long polling support\n\
+      --no-getwork       disable getwork support\n\
+      --no-gbt           disable getblocktemplate support\n\
+      --no-stratum       disable X-Stratum support\n\
+      --no-redirect      ignore requests to change the URL of the mining server\n\
+  -q, --quiet            disable per-thread hashmeter output\n\
+  -D, --debug            enable debug output\n\
+  -P, --protocol-dump    verbose dump of protocol-level activities\n"
 #ifdef HAVE_SYSLOG_H
 "\
   -S, --syslog          use system log for output messages\n"
@@ -214,6 +216,7 @@ static struct option const options[] = {
 	{ "coinbase-addr", 1, NULL, 1013 },
 	{ "coinbase-sig", 1, NULL, 1015 },
 	{ "config", 1, NULL, 'c' },
+	{ "cuckoo-threads", 1, NULL, 'c' },
 	{ "debug", 0, NULL, 'D' },
 	{ "help", 0, NULL, 'h' },
 	{ "no-gbt", 0, NULL, 1011 },
@@ -1112,7 +1115,7 @@ static void stratum_gen_work(struct stratum_ctx *sctx, struct work *work)
 	work->data[31] = 0x00000288;
 
 	pthread_mutex_unlock(&sctx->work_lock);
-	applog(LOG_INFO, "DEBUG: work->data[20]=%x", work->data[20]);
+	applog(LOG_INFO, "DEBUG: edgebits work->data[20]=%x; >> 24: %d", work->data[20], work->data[20] >> 24);
 
 	if (opt_debug) {
 		char *xnonce2str = abin2hex(work->xnonce2, work->xnonce2_len);
@@ -1224,7 +1227,8 @@ static void *miner_thread(void *userdata)
 		applog(LOG_INFO, "target = %s", target_str);
 
 		/* scan nonces for a proof-of-work hash */
-		rc = scanhash_sha256d(thr_id, work.data, work.target, work.cycle, max_nonce, &hashes_done);
+
+		rc = scancycles(thr_id, work.data, work.target, work.cycle, max_nonce, &hashes_done, opt_n_cuckoo_threads);
 
 		applog(LOG_INFO, "after scanhash");
 
@@ -1606,6 +1610,12 @@ static void parse_arg(int key, char *arg, char *pname)
 			show_usage_and_exit(1);
 		opt_n_threads = v;
 		break;
+	case 'C':
+		v = atoi(arg);
+		if (v < 1 || v > 9999)	/* sanity check */
+			show_usage_and_exit(1);
+		opt_n_cuckoo_threads = v;
+		break;
 	case 'u':
 		free(rpc_user);
 		rpc_user = strdup(arg);
@@ -1896,6 +1906,9 @@ int main(int argc, char *argv[])
 		num_processors = 1;
 	if (!opt_n_threads)
 		opt_n_threads = num_processors;
+
+	if (!opt_n_cuckoo_threads)
+		opt_n_cuckoo_threads = 1;
 
 #ifdef HAVE_SYSLOG_H
 	if (use_syslog)
