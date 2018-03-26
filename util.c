@@ -1130,7 +1130,7 @@ start:
 	pthread_mutex_unlock(&sctx->work_lock);
 
 	if (opt_debug && sid)
-		applog(LOG_DEBUG, "Stratum session id: %s", sctx->session_id);
+		applog(LOG_DEBUG, "Stratum session id: %s; xnonce1: %s; xnonce2_size: %d", sctx->session_id, xnonce1, xn2_size);
 
 	ret = true;
 

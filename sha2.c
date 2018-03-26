@@ -512,7 +512,6 @@ int scancycles(int thr_id, uint32_t *pdata, const uint32_t *ptarget, uint32_t *c
 		if (fulltest(cycle_hash, ptarget)) {
 			*hashes_done = n - first_nonce + 1;
 
-			char* cycle_hash_string = abin2hex((const uint8_t*)cycle_hash, sizeof(uint32_t) * 8);
 
 			uint32_t chash_be[8];
 			char cycle_hash_string1[65];
@@ -523,7 +522,6 @@ int scancycles(int thr_id, uint32_t *pdata, const uint32_t *ptarget, uint32_t *c
 			bin2hex(cycle_hash_string1, (unsigned char *)chash_be, 32);
 
 			printf("\t\tfound hash string:        %s\n", hash_str);
-			printf("\t\tfound cycle hash string:  %s\n", cycle_hash_string);
 			printf("\t\tfound cycle hash string1: %s\n", cycle_hash_string1);
 
 			return 1;

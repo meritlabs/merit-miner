@@ -250,6 +250,8 @@ struct work {
 
 	int height;
 	char *txs;
+	char *invites;
+	char *referrals;
 	char *workid;
 
 	char *job_id;
@@ -266,6 +268,8 @@ static char *lp_id;
 static inline void work_free(struct work *w)
 {
 	free(w->txs);
+	free(w->invites);
+	free(w->referrals);
 	free(w->workid);
 	free(w->job_id);
 	free(w->xnonce2);
@@ -276,6 +280,10 @@ static inline void work_copy(struct work *dest, const struct work *src)
 	memcpy(dest, src, sizeof(struct work));
 	if (src->txs)
 		dest->txs = strdup(src->txs);
+	if (src->invites)
+		dest->invites = strdup(src->invites);
+	if (src->referrals)
+		dest->referrals = strdup(src->referrals);
 	if (src->workid)
 		dest->workid = strdup(src->workid);
 	if (src->job_id)
@@ -335,45 +343,19 @@ err_out:
 static bool gbt_work_decode(const json_t *val, struct work *work)
 {
 	int i, n;
-	uint32_t version, curtime, bits, edgebits;
+	uint32_t version, curtime, bits;
 	uint32_t prevhash[8];
 	uint32_t target[8];
-	int cbtx_size;
-	unsigned char *cbtx = NULL;
+	uint8_t edgebits;
 	int tx_count, tx_size;
+	int inv_count, inv_size;
+	int ref_count, ref_size;
 	unsigned char txc_vi[9];
+	unsigned char invc_vi[9];
+	unsigned char refc_vi[9];
 	unsigned char (*merkle_tree)[32] = NULL;
-	bool coinbase_append = false;
-	bool submit_coinbase = false;
-	bool segwit = false;
-	json_t *tmp, *txa;
+	json_t *tmp, *txa, *inva, *refa;
 	bool rc = false;
-
-	tmp = json_object_get(val, "rules");
-	if (tmp && json_is_array(tmp)) {
-		n = json_array_size(tmp);
-		for (i = 0; i < n; i++) {
-			const char *s = json_string_value(json_array_get(tmp, i));
-			if (!s)
-				continue;
-			if (!strcmp(s, "segwit") || !strcmp(s, "!segwit"))
-				segwit = true;
-		}
-	}
-
-	tmp = json_object_get(val, "mutable");
-	if (tmp && json_is_array(tmp)) {
-		n = json_array_size(tmp);
-		for (i = 0; i < n; i++) {
-			const char *s = json_string_value(json_array_get(tmp, i));
-			if (!s)
-				continue;
-			if (!strcmp(s, "coinbase/append"))
-				coinbase_append = true;
-			else if (!strcmp(s, "submit/coinbase"))
-				submit_coinbase = true;
-		}
-	}
 
 	tmp = json_object_get(val, "height");
 	if (!tmp || !json_is_integer(tmp)) {
@@ -406,10 +388,12 @@ static bool gbt_work_decode(const json_t *val, struct work *work)
 		goto out;
 	}
 
-	if (unlikely(!jobj_binary(val, "edgebits", &edgebits, sizeof(edgebits)))) {
+	tmp = json_object_get(val, "edgebits");
+	if (!tmp || !json_is_integer(tmp)) {
 		applog(LOG_ERR, "JSON invalid edgebits");
 		goto out;
 	}
+	edgebits = json_integer_value(tmp);
 
 	/* find count and size of transactions */
 	txa = json_object_get(val, "transactions");
@@ -429,172 +413,117 @@ static bool gbt_work_decode(const json_t *val, struct work *work)
 		tx_size += strlen(tx_hex) / 2;
 	}
 
-	/* build coinbase transaction */
-	tmp = json_object_get(val, "coinbasetxn");
-	if (tmp) {
-		const char *cbtx_hex = json_string_value(json_object_get(tmp, "data"));
-		cbtx_size = cbtx_hex ? strlen(cbtx_hex) / 2 : 0;
-		cbtx = malloc(cbtx_size + 100);
-		if (cbtx_size < 60 || !hex2bin(cbtx, cbtx_hex, cbtx_size)) {
-			applog(LOG_ERR, "JSON invalid coinbasetxn");
-			goto out;
-		}
-	} else {
-		int64_t cbvalue;
-		if (!pk_script_size) {
-			if (allow_getwork) {
-				applog(LOG_INFO, "No payout address provided, switching to getwork");
-				have_gbt = false;
-			} else
-				applog(LOG_ERR, "No payout address provided");
-			goto out;
-		}
-		tmp = json_object_get(val, "coinbasevalue");
-		if (!tmp || !json_is_number(tmp)) {
-			applog(LOG_ERR, "JSON invalid coinbasevalue");
-			goto out;
-		}
-		cbvalue = json_is_integer(tmp) ? json_integer_value(tmp) : json_number_value(tmp);
-		cbtx = malloc(256);
-		le32enc((uint32_t *)cbtx, 1); /* version */
-		cbtx[4] = 1; /* in-counter */
-		memset(cbtx+5, 0x00, 32); /* prev txout hash */
-		le32enc((uint32_t *)(cbtx+37), 0xffffffff); /* prev txout index */
-		cbtx_size = 43;
-		/* BIP 34: height in coinbase */
-		for (n = work->height; n; n >>= 8) {
-			cbtx[cbtx_size++] = n & 0xff;
-			if (n < 0x100 && n >= 0x80)
-				cbtx[cbtx_size++] = 0;
-		}
-		cbtx[42] = cbtx_size - 43;
-		cbtx[41] = cbtx_size - 42; /* scriptsig length */
-		le32enc((uint32_t *)(cbtx+cbtx_size), 0xffffffff); /* sequence */
-		cbtx_size += 4;
-		cbtx[cbtx_size++] = segwit ? 2 : 1; /* out-counter */
-		le32enc((uint32_t *)(cbtx+cbtx_size), (uint32_t)cbvalue); /* value */
-		le32enc((uint32_t *)(cbtx+cbtx_size+4), cbvalue >> 32);
-		cbtx_size += 8;
-		cbtx[cbtx_size++] = pk_script_size; /* txout-script length */
-		memcpy(cbtx+cbtx_size, pk_script, pk_script_size);
-		cbtx_size += pk_script_size;
-		if (segwit) {
-			unsigned char (*wtree)[32] = calloc(tx_count + 2, 32);
-			memset(cbtx+cbtx_size, 0, 8); /* value */
-			cbtx_size += 8;
-			cbtx[cbtx_size++] = 38; /* txout-script length */
-			cbtx[cbtx_size++] = 0x6a; /* txout-script */
-			cbtx[cbtx_size++] = 0x24;
-			cbtx[cbtx_size++] = 0xaa;
-			cbtx[cbtx_size++] = 0x21;
-			cbtx[cbtx_size++] = 0xa9;
-			cbtx[cbtx_size++] = 0xed;
-			for (i = 0; i < tx_count; i++) {
-				const json_t *tx = json_array_get(txa, i);
-				const json_t *hash = json_object_get(tx, "hash");
-				if (!hash || !hex2bin(wtree[1+i], json_string_value(hash), 32)) {
-					applog(LOG_ERR, "JSON invalid transaction hash");
-					free(wtree);
-					goto out;
-				}
-				memrev(wtree[1+i], 32);
-			}
-			n = tx_count + 1;
-			while (n > 1) {
-				if (n % 2)
-					memcpy(wtree[n], wtree[n-1], 32);
-				n = (n + 1) / 2;
-				for (i = 0; i < n; i++)
-					sha256d(wtree[i], wtree[2*i], 64);
-			}
-			memset(wtree[1], 0, 32);  /* witness reserved value = 0 */
-			sha256d(cbtx+cbtx_size, wtree[0], 64);
-			cbtx_size += 32;
-			free(wtree);
-		}
-		le32enc((uint32_t *)(cbtx+cbtx_size), 0); /* lock time */
-		cbtx_size += 4;
-		coinbase_append = true;
+	/* find count and size of invites */
+	inva = json_object_get(val, "invites");
+	if (!inva || !json_is_array(inva)) {
+		applog(LOG_ERR, "JSON invalid invites");
+		goto out;
 	}
-	if (coinbase_append) {
-		unsigned char xsig[100];
-		int xsig_len = 0;
-		if (*coinbase_sig) {
-			n = strlen(coinbase_sig);
-			if (cbtx[41] + xsig_len + n <= 100) {
-				memcpy(xsig+xsig_len, coinbase_sig, n);
-				xsig_len += n;
-			} else {
-				applog(LOG_WARNING, "Signature does not fit in coinbase, skipping");
-			}
+	inv_count = json_array_size(inva);
+	inv_size = 0;
+	for (i = 0; i < inv_count; i++) {
+		const json_t *inv = json_array_get(inva, i);
+		const char *inv_hex = json_string_value(json_object_get(inv, "data"));
+		if (!inv_hex) {
+			applog(LOG_ERR, "JSON invalid invite");
+			goto out;
 		}
-		tmp = json_object_get(val, "coinbaseaux");
-		if (tmp && json_is_object(tmp)) {
-			void *iter = json_object_iter(tmp);
-			while (iter) {
-				unsigned char buf[100];
-				const char *s = json_string_value(json_object_iter_value(iter));
-				n = s ? strlen(s) / 2 : 0;
-				if (!s || n > 100 || !hex2bin(buf, s, n)) {
-					applog(LOG_ERR, "JSON invalid coinbaseaux");
-					break;
-				}
-				if (cbtx[41] + xsig_len + n <= 100) {
-					memcpy(xsig+xsig_len, buf, n);
-					xsig_len += n;
-				}
-				iter = json_object_iter_next(tmp, iter);
-			}
-		}
-		if (xsig_len) {
-			unsigned char *ssig_end = cbtx + 42 + cbtx[41];
-			int push_len = cbtx[41] + xsig_len < 76 ? 1 :
-			               cbtx[41] + 2 + xsig_len > 100 ? 0 : 2;
-			n = xsig_len + push_len;
-			memmove(ssig_end + n, ssig_end, cbtx_size - 42 - cbtx[41]);
-			cbtx[41] += n;
-			if (push_len == 2)
-				*(ssig_end++) = 0x4c; /* OP_PUSHDATA1 */
-			if (push_len)
-				*(ssig_end++) = xsig_len;
-			memcpy(ssig_end, xsig, xsig_len);
-			cbtx_size += n;
-		}
+		inv_size += strlen(inv_hex) / 2;
 	}
 
-	n = varint_encode(txc_vi, 1 + tx_count);
-	work->txs = malloc(2 * (n + cbtx_size + tx_size) + 1);
+	/* find count and size of referrals */
+	refa = json_object_get(val, "referrals");
+	if (!refa || !json_is_array(refa)) {
+		applog(LOG_ERR, "JSON invalid referrals");
+		goto out;
+	}
+	ref_count = json_array_size(refa);
+	ref_size = 0;
+	for (i = 0; i < ref_count; i++) {
+		const json_t *ref = json_array_get(refa, i);
+		const char *ref_hex = json_string_value(json_object_get(ref, "data"));
+		if (!ref_hex) {
+			applog(LOG_ERR, "JSON invalid referral");
+			goto out;
+		}
+		ref_size += strlen(ref_hex) / 2;
+	}
+
+	n = varint_encode(txc_vi, tx_count);
+	work->txs = malloc(2 * (n + tx_size) + 1);
 	bin2hex(work->txs, txc_vi, n);
-	bin2hex(work->txs + 2*n, cbtx, cbtx_size);
+
+	n = varint_encode(invc_vi, inv_count);
+	work->invites = malloc(2 * (n + inv_size) + 1);
+	bin2hex(work->invites, invc_vi, n);
+
+	n = varint_encode(refc_vi, ref_count);
+	work->referrals = malloc(2 * (n + ref_size) + 1);
+	bin2hex(work->referrals, refc_vi, n);
+
+	applog(LOG_INFO, "txs count: %d; size: %d", tx_count, tx_size);
+	applog(LOG_INFO, "invites count: %d; size: %d", inv_count, inv_size);
+	applog(LOG_INFO, "referrals count: %d; size: %d", ref_count, ref_size);
+
+
+	// do not assemble coinbase tx here as we recieve it from meritd
+	// and it contains all ambassador rewards inside
+	// TODO: get rid of payout pubkey param for getblocktemplate and update
+	// coinbase script here with miner argument
+
 
 	/* generate merkle root */
-	merkle_tree = malloc(32 * ((1 + tx_count + 1) & ~1));
-	sha256d(merkle_tree[0], cbtx, cbtx_size);
+
+	/* coinbase is sent in the list of transactoins, do not do any special processing here */
+	merkle_tree = malloc(32 * ((tx_count + inv_count + ref_count + 1) & ~1));
 	for (i = 0; i < tx_count; i++) {
 		tmp = json_array_get(txa, i);
 		const char *tx_hex = json_string_value(json_object_get(tmp, "data"));
-		const int tx_size = tx_hex ? strlen(tx_hex) / 2 : 0;
-		if (segwit) {
-			const char *txid = json_string_value(json_object_get(tmp, "txid"));
-			if (!txid || !hex2bin(merkle_tree[1 + i], txid, 32)) {
-				applog(LOG_ERR, "JSON invalid transaction txid");
-				goto out;
-			}
-			memrev(merkle_tree[1 + i], 32);
-		} else {
-			unsigned char *tx = malloc(tx_size);
-			if (!tx_hex || !hex2bin(tx, tx_hex, tx_size)) {
-				applog(LOG_ERR, "JSON invalid transactions");
-				free(tx);
-				goto out;
-			}
-			sha256d(merkle_tree[1 + i], tx, tx_size);
-			free(tx);
+		const char *txid = json_string_value(json_object_get(tmp, "txid"));
+		if (!txid || !hex2bin(merkle_tree[i], txid, 32)) {
+			applog(LOG_ERR, "JSON invalid transaction txid");
+			goto out;
 		}
-		if (!submit_coinbase)
-			strcat(work->txs, tx_hex);
+		memrev(merkle_tree[i], 32);
+
+		strcat(work->txs, tx_hex);
 	}
-	n = 1 + tx_count;
+
+	/* i comes from previous txs loop */
+	for (int j = 0; j < inv_count; j++, i++) {
+		tmp = json_array_get(inva, j);
+		const char *inv_hex = json_string_value(json_object_get(tmp, "data"));
+		const int inv_size = inv_hex ? strlen(inv_hex) / 2 : 0;
+		unsigned char *inv = malloc(inv_size);
+		if (!inv_hex || !hex2bin(inv, inv_hex, inv_size)) {
+			applog(LOG_ERR, "JSON invalid invites");
+			free(inv);
+			goto out;
+		}
+		sha256d(merkle_tree[i], inv, inv_size);
+		free(inv);
+
+		strcat(work->invites, inv_hex);
+	}
+
+	/* i comes from previous invites loop */
+	for (int j = 0; j < ref_count; j++, i++) {
+		tmp = json_array_get(inva, j);
+		const char *ref_hex = json_string_value(json_object_get(tmp, "data"));
+		const int ref_size = ref_hex ? strlen(ref_hex) / 2 : 0;
+		unsigned char *ref = malloc(ref_size);
+		if (!ref_hex || !hex2bin(ref, ref_hex, ref_size)) {
+			applog(LOG_ERR, "JSON invalid referrals");
+			free(ref);
+			goto out;
+		}
+		sha256d(merkle_tree[i], ref, ref_size);
+		free(ref);
+
+		strcat(work->referrals, ref_hex);
+	}
+
+	n = tx_count + inv_count + ref_count;
 	while (n > 1) {
 		if (n % 2) {
 			memcpy(merkle_tree[n], merkle_tree[n-1], 32);
@@ -602,7 +531,7 @@ static bool gbt_work_decode(const json_t *val, struct work *work)
 		}
 		n /= 2;
 		for (i = 0; i < n; i++)
-			sha256d(merkle_tree[i], merkle_tree[2*i], 64);
+			sha256d(merkle_tree[i], merkle_tree[2 * i], 64);
 	}
 
 	/* assemble block header */
@@ -611,10 +540,14 @@ static bool gbt_work_decode(const json_t *val, struct work *work)
 		work->data[8 - i] = le32dec(prevhash + i);
 	for (i = 0; i < 8; i++)
 		work->data[9 + i] = be32dec((uint32_t *)merkle_tree[0] + i);
+
 	work->data[17] = swab32(curtime);
 	work->data[18] = le32dec(&bits);
 	memset(work->data + 19, 0x00, 52);
-	work->data[20] = (edgebits << 23) & (1 << 22);
+	// move one byte of edgebits to the end of the message
+	// followed by "1" bit
+	work->data[20] = ((uint32_t)edgebits << 24) | (1 << 23);
+	// lenth of the message in bits
 	work->data[31] = 0x00000288;
 
 	if (unlikely(!jobj_binary(val, "target", target, sizeof(target)))) {
@@ -650,7 +583,6 @@ static bool gbt_work_decode(const json_t *val, struct work *work)
 	rc = true;
 
 out:
-	free(cbtx);
 	free(merkle_tree);
 	return rc;
 }
@@ -683,7 +615,9 @@ static void share_result(int result, const char *reason)
 static bool submit_upstream_work(CURL *curl, struct work *work)
 {
 	json_t *val, *res, *reason;
-	char data_str[2 * sizeof(work->data) + 1];
+	int cycle_encoded_length = 2 + 2 * sizeof(work->cycle);
+	// hex encoded 81 bytes of header + 2 bytes for hex encoded cycle length and cycle
+	char data_str[2 * sizeof(work->data) + cycle_encoded_length];
 	char s[345];
 	int i;
 	bool rc = false;
@@ -707,27 +641,13 @@ static bool submit_upstream_work(CURL *curl, struct work *work)
 		// max length of hex encoded edges + commas
 		int cycle_str_length = (32 / 4 + 1) * CUCKOO_CYCLE_LENGTH - 1;
 		req = malloc(256 + cycle_str_length + strlen(rpc_user) + strlen(work->job_id) + 2 * work->xnonce2_len);
+
+		// TODO replace with cycle hex encoded as a set (length + array in hex)
 		char str_cycle[cycle_str_length];
 		for (int i = 0; i < CUCKOO_CYCLE_LENGTH; i++) {
 			sprintf(str_cycle, "%s%s%x", str_cycle, i > 0 ? "," : "", work->cycle[i]);
 		}
 
-		// uint32_t hash_be[8];
-		// char hash_str[65];
-
-		// for (i = 0; i < 8; i++) {
-		// 	be32enc(hash_be + i, hash[7 - i]);
-		// }
-
-		// bin2hex(hash_str, (unsigned char *)hash_be, 32);
-
-		// applog(LOG_DEBUG, "DEBUG: %s\nHash:   %s\nTarget: %s",
-		// 	rc ? "hash <= target"
-		// 	   : "hash > target (false positive)",
-		// 	hash_str,
-		// 	target_str);
-
-		// applog(LOG_INFO, "hash  to send: %s", hash_str);
 		applog(LOG_INFO, "");
 		applog(LOG_INFO, "nonce to send: %lu", work->data[19]);
 		applog(LOG_INFO, "cycle to send: %s", str_cycle);
@@ -749,23 +669,30 @@ static bool submit_upstream_work(CURL *curl, struct work *work)
 
 		for (i = 0; i < ARRAY_SIZE(work->data); i++)
 			be32enc(work->data + i, work->data[i]);
-		bin2hex(data_str, (unsigned char *)work->data, 80);
+
+		unsigned char cycle_length = CUCKOO_CYCLE_LENGTH;
+		// hex encoded block header bytes before cycle
+		bin2hex(data_str, (unsigned char *)work->data, 81);
+		// hex encoded cycle length + cycle
+		bin2hex(data_str + 162, &cycle_length, 1);
+		bin2hex(data_str + 164, (unsigned char *)work->cycle, sizeof(work->cycle));
+
 		if (work->workid) {
 			char *params;
 			val = json_object();
 			json_object_set_new(val, "workid", json_string(work->workid));
 			params = json_dumps(val, 0);
 			json_decref(val);
-			req = malloc(128 + 2*80 + strlen(work->txs) + strlen(params));
+			req = malloc(128 + 2 * 81 + cycle_encoded_length + strlen(work->txs) + strlen(work->invites) + strlen(work->referrals) + strlen(params));
 			sprintf(req,
-				"{\"method\": \"submitblock\", \"params\": [\"%s%s\", %s], \"id\":1}\r\n",
-				data_str, work->txs, params);
+				"{\"method\": \"submitblock\", \"params\": [\"%s%s%s%s\", %s], \"id\":1}\r\n",
+				data_str, work->txs, work->invites, work->referrals, params);
 			free(params);
 		} else {
-			req = malloc(128 + 2*80 + strlen(work->txs));
+			req = malloc(128 + 2 * 81 + cycle_encoded_length + strlen(work->txs) + strlen(work->invites) + strlen(work->referrals));
 			sprintf(req,
-				"{\"method\": \"submitblock\", \"params\": [\"%s%s\"], \"id\":1}\r\n",
-				data_str, work->txs);
+				"{\"method\": \"submitblock\", \"params\": [\"%s%s%s%s\"], \"id\":1}\r\n",
+				data_str, work->txs, work->invites, work->referrals);
 		}
 		val = json_rpc_call(curl, rpc_url, rpc_userpass, req, NULL, 0);
 		free(req);
@@ -875,6 +802,8 @@ start:
 
 	if (have_gbt) {
 		rc = gbt_work_decode(json_object_get(val, "result"), work);
+		applog(LOG_INFO, "get_upstream_work gbt_work_decode done");
+
 		if (!have_gbt) {
 			json_decref(val);
 			goto start;
@@ -1090,7 +1019,10 @@ static void stratum_gen_work(struct stratum_ctx *sctx, struct work *work)
 	memcpy(work->xnonce2, sctx->job.xnonce2, sctx->xnonce2_size);
 
 	/* Generate merkle root */
+
+	/* coinbase is sent from stratum server as a separate tx, so add it to merkle first */
 	sha256d(merkle_root, sctx->job.coinbase, sctx->job.coinbase_size);
+
 	for (i = 0; i < sctx->job.merkle_count; i++) {
 		memcpy(merkle_root + 32, sctx->job.merkle[i], 32);
 		sha256d(merkle_root, merkle_root, 64);
@@ -1323,6 +1255,7 @@ start:
 			req = malloc(strlen(gbt_lp_req) + strlen(lp_id) + 1);
 			sprintf(req, gbt_lp_req, lp_id);
 		}
+
 		val = json_rpc_call(curl, lp_url, rpc_userpass,
 				    req ? req : getwork_req, &err,
 				    JSON_RPC_LONGPOLL);
