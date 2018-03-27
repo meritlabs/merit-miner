@@ -349,9 +349,8 @@ static bool gbt_work_decode(const json_t *val, struct work *work)
 	uint8_t edgebits;
 	int tx_count, tx_size; // tx_size is a size of all txs without coinbase tx
 	int cbtx_size, cbtx_no_witness_size = 0; // size of coinbase tx
-	char *cbtx = NULL;
-	char *cbtx_no_witness = NULL;
-	char *cbtx_hex = NULL;
+	unsigned char *cbtx = NULL;
+	unsigned char *cbtx_no_witness = NULL;
 	int inv_count, inv_size;
 	int ref_count, ref_size;
 	unsigned char txc_vi[9];
@@ -419,9 +418,6 @@ static bool gbt_work_decode(const json_t *val, struct work *work)
 		tx_size += strlen(tx_hex) / 2;
 	}
 
-
-// 020000000001010000000000000000000000000000000000000000000000000000000000000000ffffffff0402547400ffffffff07601b874d000000002321038267588c8555fbf0e5d0887e4e164f0ad9041bdf0d6b04060d214eca1fe186a0ace0978c05000000001976a91423e7e76db478e1998483a4a1c448d48d1ac6640088ac40374309000000001976a914f971453d61bc8117ae16918f221eea91f24b2af988aca07df90b000000001976a914cd724d3b246fac1dd9ee19590bec99d16ec3192888ac60e96208000000001976a9147973e37e76bf9e8a6f58c19af866d291c577564988ac80428206000000001976a914920f7476ffbf1b0cf771bdffe6905f37db49b7c588ac0000000000000000266a24aa21a9ede2f61c3f71d1defd3fa999dfa36953755c690689799962b48bebd836974e8cf90120000000000000000000000000000000000000000000000000000000000000000000000000
-// 02000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0402547400ffffffff07601b874d000000001976a9145223aa79c38e2dd7f6faa8ee331e6320f8befba888ace0978c05000000001976a91423e7e76db478e1998483a4a1c448d48d1ac6640088ac40374309000000001976a914f971453d61bc8117ae16918f221eea91f24b2af988aca07df90b000000001976a914cd724d3b246fac1dd9ee19590bec99d16ec3192888ac60e96208000000001976a9147973e37e76bf9e8a6f58c19af866d291c577564988ac80428206000000001976a914920f7476ffbf1b0cf771bdffe6905f37db49b7c588ac0000000000000000266a24aa21a9ede2f61c3f71d1defd3fa999dfa36953755c690689799962b48bebd836974e8cf90120000000
 	/*
 	 * update coinbase tx with provided coinbase address
 	 * TODO: extract constants
@@ -429,21 +425,15 @@ static bool gbt_work_decode(const json_t *val, struct work *work)
 	const json_t *orig_cbtx_o = json_array_get(txa, 0);
 	const char *orig_cbtx_hex = json_string_value(json_object_get(orig_cbtx_o, "data"));
 	int orig_cbtx_size = strlen(orig_cbtx_hex) / 2;
-	char *orig_cbtx = malloc(orig_cbtx_size);
+	unsigned char *orig_cbtx = malloc(orig_cbtx_size);
 	hex2bin(orig_cbtx, orig_cbtx_hex, orig_cbtx_size);
 	int orig_cbtx_pos = 0;
-
-
-	applog(LOG_INFO, "or_cbtx_hex:    %s", orig_cbtx_hex);
 
 	// if payout address is provided, build cb tx with this pk first
 	if (pk_script_size) {
 		bool script_sig_found = false;
-		// updated coinbase tx length is: original cbtx len - pubkey len - pubkey - OP_CHECKSIG + new pubkey script length
-		int cbtx_size_full = strlen(orig_cbtx_hex) / 2 - 1 - 33 - 1 + pk_script_size;
-		cbtx = malloc(cbtx_size_full);
 
-		char *script_sig_len_pos;
+		unsigned char *script_sig_len_pos;
 		int script_sig_len = 1 + 1 + 33; // script length byte + pubkey length byte + pubkey
 
 		do {
@@ -456,14 +446,17 @@ static bool gbt_work_decode(const json_t *val, struct work *work)
 			}
 		} while (!script_sig_found && script_sig_len_pos != NULL);
 
-
 		if (script_sig_found) {
+			// updated coinbase tx length is: original cbtx len - pubkey len - pubkey - OP_CHECKSIG + new pubkey script length
+			int cbtx_size_full = strlen(orig_cbtx_hex) / 2 - 1 - 33 - 1 + pk_script_size;
+			cbtx = malloc(cbtx_size_full);
+
 			// copy original cb till script sig
 			memcpy(cbtx, orig_cbtx, script_sig_len_pos - orig_cbtx); // copy tx version
 			cbtx_size = script_sig_len_pos - orig_cbtx;
 
 			// skip origin tx data till the end of script sig (ends with OP_CHECKSIG byte)
-			orig_cbtx += script_sig_len_pos - orig_cbtx + script_sig_len + 1;
+			orig_cbtx_pos = script_sig_len_pos - orig_cbtx + script_sig_len + 1;
 
 			// set pk script
 			cbtx[cbtx_size++] = pk_script_size; // set pubkey script size
@@ -471,36 +464,21 @@ static bool gbt_work_decode(const json_t *val, struct work *work)
 			cbtx_size += pk_script_size;
 
 			// copy last part of cb
-			memcpy(cbtx + cbtx_size, orig_cbtx, cbtx_size_full - cbtx_size);
+			memcpy(cbtx + cbtx_size, orig_cbtx + orig_cbtx_pos, cbtx_size_full - cbtx_size);
 			cbtx_size = cbtx_size_full;
 
 			// set locktime to 0
 			memset(cbtx + cbtx_size - 4, 0x00, 4);
 
-			char *cbtx_hex__ = abin2hex(cbtx, cbtx_size);
-
-			applog(LOG_INFO, "pk_cbtx_hex:    %s", cbtx_hex__);
-
-			// // updated coinbase tx length is: old cbtx len - pubkey len - pubkey - OP_CHECKSIG + new pubkey script length
-			// cbtx_size = strlen(orig_cbtx_hex) - 2 - 33 * 2 - 2 + pk_script_size * 2;
-			// cbtx_hex = malloc(cbtx_size);
-
-			// // sctipt sig length + pubkey len + pubkey len + OP_CHECKSIG
-			// const char *original_script_sig_length = script_sig_len + 2 + 2 + 33 * 2 + 2;
-			// // copy coinbase tx
-			// strcpy(cbtx_hex, orig_cbtx_hex);
-			// // set script sig length
-			// bin2hex(cbtx_hex + (script_sig_len_pos - orig_cbtx_hex), (unsigned char *)&pk_script_size, 1);
-			// // copy pubkey script after script sig length
-			// strcpy(cbtx_hex + (script_sig_len_pos - orig_cbtx_hex) + 2, abin2hex(pk_script, pk_script_size));
-			// // copy last part of original cb that comes after original script sig
-			// strcpy(cbtx_hex + (script_sig_len_pos - orig_cbtx_hex) + 2 + pk_script_size * 2, original_script_sig_length);
+			free(orig_cbtx);
 		} else {
 			applog(LOG_DEBUG, "DEBUG: Script sig is not found in coinbase tx. Using payout script from server");
-			cbtx_hex = orig_cbtx_hex;
+			cbtx = orig_cbtx;
+			cbtx_size = orig_cbtx_size;
 		}
 	} else {
-		cbtx_hex = orig_cbtx_hex;
+		cbtx = orig_cbtx;
+		cbtx_size = orig_cbtx_size;
 	}
 
 	// build cb without witness data to get hash of it for merkle root
@@ -508,11 +486,8 @@ static bool gbt_work_decode(const json_t *val, struct work *work)
 	// 34 - size of witness script (2 bytes length for compat script size + 32 bytes of script)
 	int cbtx_no_witness_size_full = cbtx_size - 2 - 34;
 	cbtx_no_witness = malloc(cbtx_no_witness_size_full);
-
-	applog(LOG_INFO, "cbtx_no_witness_size_full:    %d", cbtx_no_witness_size_full);
-
-
-	memcpy(cbtx_no_witness, cbtx, 4); // copy tx version
+	// copy tx version
+	memcpy(cbtx_no_witness, cbtx, 4);
 	cbtx_no_witness_size = 4;
 
 	// copy last part of tx
@@ -521,10 +496,6 @@ static bool gbt_work_decode(const json_t *val, struct work *work)
 
 	// set locktime to 0
 	memset(cbtx_no_witness + cbtx_no_witness_size - 4, 0x00, 4);
-
-	char *cbtx_nw_hex__ = abin2hex(cbtx_no_witness, cbtx_no_witness_size);
-
-	applog(LOG_INFO, "nw_cbtx_hex:    %s", cbtx_nw_hex__);
 
 	/* find count and size of invites */
 	inva = json_object_get(val, "invites");
@@ -563,7 +534,7 @@ static bool gbt_work_decode(const json_t *val, struct work *work)
 	}
 
 	n = varint_encode(txc_vi, tx_count);
-	work->txs = malloc(2 * (n + cbtx_size / 2 + tx_size) + 1);
+	work->txs = malloc(2 * (n + cbtx_no_witness_size + tx_size) + 1);
 	bin2hex(work->txs, txc_vi, n);
 
 	n = varint_encode(invc_vi, inv_count);
@@ -580,11 +551,16 @@ static bool gbt_work_decode(const json_t *val, struct work *work)
 
 	/* generate merkle root */
 
-	unsigned char *cbtx_x = malloc(cbtx_size / 2);
-	hex2bin(cbtx_x, cbtx_hex, cbtx_size / 2);
-
+	// use cb WITHOUT witness for merkle root
 	merkle_tree = malloc(32 * ((tx_count + inv_count + ref_count + 1) & ~1));
-	sha256d(merkle_tree[0], cbtx_x, cbtx_size / 2);
+	sha256d(merkle_tree[0], cbtx_no_witness, cbtx_no_witness_size);
+
+	char *cbtx_hex = abin2hex(cbtx_no_witness, cbtx_no_witness_size);
+
+	free(cbtx);
+	free(cbtx_no_witness);
+
+	// use cb WITH witness for block transactions array
 	strcat(work->txs, cbtx_hex);
 
 	// skip original cb here
