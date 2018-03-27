@@ -433,29 +433,30 @@ static bool gbt_work_decode(const json_t *val, struct work *work)
 	if (pk_script_size) {
 		bool script_sig_found = false;
 
+		// script sig is OP_HASH << script_id << OP_EQUAL
 		unsigned char *script_sig_len_pos;
-		int script_sig_len = 1 + 1 + 33; // script length byte + pubkey length byte + pubkey
+		int script_sig_len = 1 + 1 + 20 + 1; // script length byte + OP_HASH byte + script_id length byte + script_id + OP_EQUAL byte
 
 		do {
 			// find script sig length position
-			script_sig_len_pos = memchr(orig_cbtx, 35, orig_cbtx_size); // 35 - length of scriptsig = 0x23
+			script_sig_len_pos = memchr(orig_cbtx, 23, orig_cbtx_size); // 23 - length of scriptsig = 0x17
 
-			// script sig len + pubkey len + pubkey == OP_CHECKSIG = 172 = 0xac
-			if (*(unsigned char *)(script_sig_len_pos + script_sig_len) == 172) {
+			// script sig len + script_id len + pubkey == OP_EQUAL = 135 = 0x87
+			if (*(unsigned char *)(script_sig_len_pos + script_sig_len) == 135) {
 				script_sig_found = true;
 			}
 		} while (!script_sig_found && script_sig_len_pos != NULL);
 
 		if (script_sig_found) {
-			// updated coinbase tx length is: original cbtx len - pubkey len - pubkey - OP_CHECKSIG + new pubkey script length
-			int cbtx_size_full = strlen(orig_cbtx_hex) / 2 - 1 - 33 - 1 + pk_script_size;
+			// updated coinbase tx length is: original cbtx len - script_sig_len + new pubkey script length
+			int cbtx_size_full = orig_cbtx_size - script_sig_len + pk_script_size;
 			cbtx = malloc(cbtx_size_full);
 
 			// copy original cb till script sig
 			memcpy(cbtx, orig_cbtx, script_sig_len_pos - orig_cbtx); // copy tx version
 			cbtx_size = script_sig_len_pos - orig_cbtx;
 
-			// skip origin tx data till the end of script sig (ends with OP_CHECKSIG byte)
+			// skip origin tx data till the end of script sig (ends with OP_EQUAL byte)
 			orig_cbtx_pos = script_sig_len_pos - orig_cbtx + script_sig_len + 1;
 
 			// set pk script
