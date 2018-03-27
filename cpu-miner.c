@@ -348,9 +348,10 @@ static bool gbt_work_decode(const json_t *val, struct work *work)
 	uint32_t target[8];
 	uint8_t edgebits;
 	int tx_count, tx_size; // tx_size is a size of all txs without coinbase tx
-	int cbtx_size, cbtx_witness_size= 0; // size of coinbase tx
+	int cbtx_size, cbtx_no_witness_size = 0; // size of coinbase tx
 	char *cbtx = NULL;
-	char *cbtx_witness = NULL;
+	char *cbtx_no_witness = NULL;
+	char *cbtx_hex = NULL;
 	int inv_count, inv_size;
 	int ref_count, ref_size;
 	unsigned char txc_vi[9];
@@ -432,19 +433,19 @@ static bool gbt_work_decode(const json_t *val, struct work *work)
 	hex2bin(orig_cbtx, orig_cbtx_hex, orig_cbtx_size);
 	int orig_cbtx_pos = 0;
 
+
+	applog(LOG_INFO, "or_cbtx_hex:    %s", orig_cbtx_hex);
+
 	// if payout address is provided, build cb tx with this pk first
 	if (pk_script_size) {
 		bool script_sig_found = false;
-		// updated coinbase tx length is: old cbtx len - pubkey len - pubkey - OP_CHECKSIG + new pubkey script length
-		int cbtx_size_full = strlen(orig_cbtx_hex) / 2 - 1 - 33 - 1 + pk_script_size - 36;
+		// updated coinbase tx length is: original cbtx len - pubkey len - pubkey - OP_CHECKSIG + new pubkey script length
+		int cbtx_size_full = strlen(orig_cbtx_hex) / 2 - 1 - 33 - 1 + pk_script_size;
 		cbtx = malloc(cbtx_size_full);
-
-		memcpy(cbtx, orig_cbtx, 4); // copy tx version
-		cbtx_size = 4;
-		orig_cbtx += 4 + 2; // skip tx version and witness dummy vin + flags
 
 		char *script_sig_len_pos;
 		int script_sig_len = 1 + 1 + 33; // script length byte + pubkey length byte + pubkey
+
 		do {
 			// find script sig length position
 			script_sig_len_pos = memchr(orig_cbtx, 35, orig_cbtx_size); // 35 - length of scriptsig = 0x23
@@ -457,13 +458,12 @@ static bool gbt_work_decode(const json_t *val, struct work *work)
 
 
 		if (script_sig_found) {
-			// copy original cb between witness dummy vin + flags and script sig
-			memcpy(cbtx + cbtx_size, orig_cbtx, script_sig_len_pos - orig_cbtx); // copy tx version
-			cbtx_size += script_sig_len_pos - orig_cbtx;
+			// copy original cb till script sig
+			memcpy(cbtx, orig_cbtx, script_sig_len_pos - orig_cbtx); // copy tx version
+			cbtx_size = script_sig_len_pos - orig_cbtx;
 
 			// skip origin tx data till the end of script sig (ends with OP_CHECKSIG byte)
 			orig_cbtx += script_sig_len_pos - orig_cbtx + script_sig_len + 1;
-
 
 			// set pk script
 			cbtx[cbtx_size++] = pk_script_size; // set pubkey script size
@@ -471,14 +471,15 @@ static bool gbt_work_decode(const json_t *val, struct work *work)
 			cbtx_size += pk_script_size;
 
 			// copy last part of cb
-			memcpy(cbtx + cbtx_size, orig_cbtx, cbtx_size_full - cbtx_size); // copy pubkey script
+			memcpy(cbtx + cbtx_size, orig_cbtx, cbtx_size_full - cbtx_size);
 			cbtx_size = cbtx_size_full;
 
-			memset(cbtx + cbtx_size - 4, 0x00, 4); // set locktime to 0
+			// set locktime to 0
+			memset(cbtx + cbtx_size - 4, 0x00, 4);
 
 			char *cbtx_hex__ = abin2hex(cbtx, cbtx_size);
 
-			applog(LOG_INFO, "cbtx_hex__:    %s", cbtx_hex__);
+			applog(LOG_INFO, "pk_cbtx_hex:    %s", cbtx_hex__);
 
 			// // updated coinbase tx length is: old cbtx len - pubkey len - pubkey - OP_CHECKSIG + new pubkey script length
 			// cbtx_size = strlen(orig_cbtx_hex) - 2 - 33 * 2 - 2 + pk_script_size * 2;
@@ -495,13 +496,35 @@ static bool gbt_work_decode(const json_t *val, struct work *work)
 			// // copy last part of original cb that comes after original script sig
 			// strcpy(cbtx_hex + (script_sig_len_pos - orig_cbtx_hex) + 2 + pk_script_size * 2, original_script_sig_length);
 		} else {
+			applog(LOG_DEBUG, "DEBUG: Script sig is not found in coinbase tx. Using payout script from server");
 			cbtx_hex = orig_cbtx_hex;
-			cbtx_size = strlen(cbtx_hex);
 		}
 	} else {
 		cbtx_hex = orig_cbtx_hex;
-		cbtx_size = strlen(cbtx_hex);
 	}
+
+	// build cb without witness data to get hash of it for merkle root
+	// 2 - size of dummy vin (0) and flags;
+	// 34 - size of witness script (2 bytes length for compat script size + 32 bytes of script)
+	int cbtx_no_witness_size_full = cbtx_size - 2 - 34;
+	cbtx_no_witness = malloc(cbtx_no_witness_size_full);
+
+	applog(LOG_INFO, "cbtx_no_witness_size_full:    %d", cbtx_no_witness_size_full);
+
+
+	memcpy(cbtx_no_witness, cbtx, 4); // copy tx version
+	cbtx_no_witness_size = 4;
+
+	// copy last part of tx
+	memcpy(cbtx_no_witness + cbtx_no_witness_size, cbtx + 6, cbtx_no_witness_size_full - cbtx_no_witness_size);
+	cbtx_no_witness_size = cbtx_no_witness_size_full;
+
+	// set locktime to 0
+	memset(cbtx_no_witness + cbtx_no_witness_size - 4, 0x00, 4);
+
+	char *cbtx_nw_hex__ = abin2hex(cbtx_no_witness, cbtx_no_witness_size);
+
+	applog(LOG_INFO, "nw_cbtx_hex:    %s", cbtx_nw_hex__);
 
 	/* find count and size of invites */
 	inva = json_object_get(val, "invites");
