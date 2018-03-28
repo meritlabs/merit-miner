@@ -503,13 +503,13 @@ int scancycles(int thr_id, uint32_t *pdata, const uint32_t *ptarget, uint32_t *c
 		}
 		bin2hex(hash_str, (unsigned char *)hash_be, 32);
 
-		bool cycleFound = findcycle(hash_str, edgebits, CUCKOO_CYCLE_LENGTH, (uint32_t *)((uint8_t *)cycle_with_size + 1), cuckoo_threads);
+		bool cycleFound = findcycle(hash_str, edgebits, CUCKOO_CYCLE_LENGTH, cycle, cuckoo_threads);
 
 		if (!cycleFound) {
 			continue;
 		}
 
-		// memcpy(&cycle_with_size[1], cycle, sizeof(uint32_t) * CUCKOO_CYCLE_LENGTH);
+		memcpy(&cycle_with_size[1], cycle, sizeof(uint32_t) * CUCKOO_CYCLE_LENGTH);
 		sha256d((uint8_t*)cycle_hash, cycle_with_size, sizeof(uint32_t) * CUCKOO_CYCLE_LENGTH + 1);
 
 		if (fulltest(cycle_hash, ptarget)) {
@@ -527,7 +527,6 @@ int scancycles(int thr_id, uint32_t *pdata, const uint32_t *ptarget, uint32_t *c
 				printf("\t\tfound hash string:        %s\n", hash_str);
 				printf("\t\tfound cycle hash string1: %s\n", cycle_hash_string1);
 			}
-			cycle = (uint32_t *)((uint8_t *)cycle_with_size + 1);
 
 			return 1;
 		}
