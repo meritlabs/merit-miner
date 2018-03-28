@@ -1232,7 +1232,6 @@ static void *miner_thread(void *userdata)
 			max_nonce = work.data[19] + max64;
 
 		hashes_done = 0;
-		gettimeofday(&tv_start, NULL);
 
 
 		uint32_t target_be[8];
@@ -1247,10 +1246,9 @@ static void *miner_thread(void *userdata)
 		applog(LOG_INFO, "target = %s", target_str);
 
 		/* scan nonces for a proof-of-work hash */
+		gettimeofday(&tv_start, NULL);
 
 		rc = scancycles(thr_id, work.data, work.target, work.cycle, max_nonce, &hashes_done, opt_n_cuckoo_threads);
-
-		applog(LOG_INFO, "after scanhash");
 
 		/* record scanhash elapsed time */
 		gettimeofday(&tv_end, NULL);

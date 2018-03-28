@@ -148,6 +148,10 @@ void siphash24x16(const siphash_keys *keys, const uint64_t *indices, uint64_t *h
   _mm256_store_si256((__m256i *)(hashes+12),XOR(XOR(vC,vD),XOR(vE,vF)));
 }
 
+#ifndef NSIPHASH
+#define NSIPHASH 8
+#endif
+
 #endif
 
 #ifndef NSIPHASH

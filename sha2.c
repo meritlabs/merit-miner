@@ -77,6 +77,7 @@ void sha256_init(uint32_t *state)
 	    S[(70 - i) % 8], S[(71 - i) % 8], \
 	    W[i] + sha256_k[i])
 
+#ifndef EXTERN_SHA256
 
 /*
  * SHA256 block compression function.  The 256-bit state is transformed via
@@ -173,6 +174,8 @@ void sha256_transform(uint32_t *state, const uint32_t *block, int swap)
 	for (i = 0; i < 8; i++)
 		state[i] += S[i];
 }
+
+#endif /* EXTERN_SHA256 */
 
 static const uint32_t sha256d_hash1[16] = {
 	0x00000000, 0x00000000, 0x00000000, 0x00000000,
@@ -500,29 +503,31 @@ int scancycles(int thr_id, uint32_t *pdata, const uint32_t *ptarget, uint32_t *c
 		}
 		bin2hex(hash_str, (unsigned char *)hash_be, 32);
 
-		bool cycleFound = findcycle(hash_str, edgebits, CUCKOO_CYCLE_LENGTH, cycle, cuckoo_threads);
+		bool cycleFound = findcycle(hash_str, edgebits, CUCKOO_CYCLE_LENGTH, (uint32_t *)((uint8_t *)cycle_with_size + 1), cuckoo_threads);
 
 		if (!cycleFound) {
 			continue;
 		}
 
-		memcpy(&cycle_with_size[1], cycle, sizeof(uint32_t) * CUCKOO_CYCLE_LENGTH);
+		// memcpy(&cycle_with_size[1], cycle, sizeof(uint32_t) * CUCKOO_CYCLE_LENGTH);
 		sha256d((uint8_t*)cycle_hash, cycle_with_size, sizeof(uint32_t) * CUCKOO_CYCLE_LENGTH + 1);
 
 		if (fulltest(cycle_hash, ptarget)) {
 			*hashes_done = n - first_nonce + 1;
 
+			if (opt_debug) {
+				uint32_t chash_be[8];
+				char cycle_hash_string1[65];
 
-			uint32_t chash_be[8];
-			char cycle_hash_string1[65];
+				for (int i = 0; i < 8; i++) {
+					be32enc(chash_be + i, cycle_hash[7 - i]);
+				}
+				bin2hex(cycle_hash_string1, (unsigned char *)chash_be, 32);
 
-			for (int i = 0; i < 8; i++) {
-				be32enc(chash_be + i, cycle_hash[7 - i]);
+				printf("\t\tfound hash string:        %s\n", hash_str);
+				printf("\t\tfound cycle hash string1: %s\n", cycle_hash_string1);
 			}
-			bin2hex(cycle_hash_string1, (unsigned char *)chash_be, 32);
-
-			printf("\t\tfound hash string:        %s\n", hash_str);
-			printf("\t\tfound cycle hash string1: %s\n", cycle_hash_string1);
+			cycle = (uint32_t *)((uint8_t *)cycle_with_size + 1);
 
 			return 1;
 		}
