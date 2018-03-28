@@ -205,7 +205,7 @@ static char const short_options[] =
 #ifdef HAVE_SYSLOG_H
 	"S"
 #endif
-	"a:c:Dhp:Px:qr:R:s:t:T:o:u:O:V";
+	"a:cC:Dhp:Px:qr:R:s:t:T:o:u:O:V";
 
 static struct option const options[] = {
 #ifndef WIN32
@@ -216,7 +216,7 @@ static struct option const options[] = {
 	{ "coinbase-addr", 1, NULL, 1013 },
 	{ "coinbase-sig", 1, NULL, 1015 },
 	{ "config", 1, NULL, 'c' },
-	{ "cuckoo-threads", 1, NULL, 'c' },
+	{ "cuckoo-threads", 1, NULL, 'C' },
 	{ "debug", 0, NULL, 'D' },
 	{ "help", 0, NULL, 'h' },
 	{ "no-gbt", 0, NULL, 1011 },
