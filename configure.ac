@@ -72,6 +72,16 @@ if test x$enable_assembly != xno; then
   AC_DEFINE([USE_ASM], [1], [Define to 1 if assembly routines are wanted.])
 fi
 
+AC_ARG_ENABLE([march],
+    [AS_HELP_STRING([--enable-march], [Use native CPU instructions for mining (default is no)])],
+    [enable_march=$enableval],
+    [enable_march=no])
+
+if test "x$enable_march" = xyes; then
+  CXXFLAGS="$CXXFLAGS -march=native"
+  CFLAGS="$CFLAGS -march=native"
+fi
+
 if test x$enable_assembly != xno -a x$have_x86_64 = xtrue
 then
   AC_MSG_CHECKING(whether we can compile AVX code)

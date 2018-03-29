@@ -1,5 +1,5 @@
 
-AM_CXXFLAGS = -std=c++11 -march=native
+AM_CXXFLAGS = -std=c++11
 
 if DEBUG
   AM_CXXFLAGS += -Wall -g -O3

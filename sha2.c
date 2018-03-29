@@ -524,8 +524,8 @@ int scancycles(int thr_id, uint32_t *pdata, const uint32_t *ptarget, uint32_t *c
 				}
 				bin2hex(cycle_hash_string1, (unsigned char *)chash_be, 32);
 
-				printf("\t\tfound hash string:        %s\n", hash_str);
-				printf("\t\tfound cycle hash string1: %s\n", cycle_hash_string1);
+				applog(LOG_INFO, "\t\tfound block hash: %s\n", hash_str);
+				applog(LOG_INFO, "\t\tfound cycle hash: %s\n", cycle_hash_string1);
 			}
 
 			return 1;

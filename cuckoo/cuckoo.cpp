@@ -1366,7 +1366,6 @@ bool run(const char *hash, uint8_t proofSize, std::set<uint32_t> &cycle, ctpl::t
 
 bool FindCycle(const char *hash, uint8_t edgeBits, uint8_t proofSize, std::set<uint32_t> &cycle, ctpl::thread_pool &pool)
 {
-
     switch (edgeBits)
     {
     case 16:
