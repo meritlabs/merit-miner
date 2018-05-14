@@ -472,6 +472,25 @@ static bool gbt_work_decode(const json_t *val, struct work *work)
 			memset(cbtx + cbtx_size - 4, 0x00, 4);
 
 			free(orig_cbtx);
+
+			// build cb without witness data to get hash of it for merkle root
+			// 2 - size of dummy vin (0) and flags;
+			// 34 - size of witness script (2 bytes length for compat script size + 32 bytes of script)
+			int cbtx_no_witness_size_full = cbtx_size - 2 - 34;
+			cbtx_no_witness = malloc(cbtx_no_witness_size_full);
+			// copy tx version
+			memcpy(cbtx_no_witness, cbtx, 4);
+			cbtx_no_witness_size = 4;
+
+			// copy last part of tx
+			memcpy(cbtx_no_witness + cbtx_no_witness_size, cbtx + 6, cbtx_no_witness_size_full - cbtx_no_witness_size);
+			cbtx_no_witness_size = cbtx_no_witness_size_full;
+
+			// set locktime to 0
+			memset(cbtx_no_witness + cbtx_no_witness_size - 4, 0x00, 4);
+
+			memcpy(cbtx, cbtx_no_witness, cbtx_no_witness_size);
+			cbtx_size = cbtx_no_witness_size;
 		} else {
 			applog(LOG_DEBUG, "DEBUG: scriptPubKey is not found in coinbase tx. Using payout script from server");
 			cbtx = orig_cbtx;
@@ -482,21 +501,6 @@ static bool gbt_work_decode(const json_t *val, struct work *work)
 		cbtx_size = orig_cbtx_size;
 	}
 
-	// build cb without witness data to get hash of it for merkle root
-	// 2 - size of dummy vin (0) and flags;
-	// 34 - size of witness script (2 bytes length for compat script size + 32 bytes of script)
-	int cbtx_no_witness_size_full = cbtx_size - 2 - 34;
-	cbtx_no_witness = malloc(cbtx_no_witness_size_full);
-	// copy tx version
-	memcpy(cbtx_no_witness, cbtx, 4);
-	cbtx_no_witness_size = 4;
-
-	// copy last part of tx
-	memcpy(cbtx_no_witness + cbtx_no_witness_size, cbtx + 6, cbtx_no_witness_size_full - cbtx_no_witness_size);
-	cbtx_no_witness_size = cbtx_no_witness_size_full;
-
-	// set locktime to 0
-	memset(cbtx_no_witness + cbtx_no_witness_size - 4, 0x00, 4);
 
 	/* find count and size of invites */
 	inva = json_object_get(val, "invites");
@@ -554,9 +558,9 @@ static bool gbt_work_decode(const json_t *val, struct work *work)
 
 	// use cb WITHOUT witness for merkle root
 	merkle_tree = malloc(32 * ((tx_count + inv_count + ref_count + 1) & ~1));
-	sha256d(merkle_tree[0], cbtx_no_witness, cbtx_no_witness_size);
+	sha256d(merkle_tree[0], cbtx, cbtx_size);
 
-	char *cbtx_hex = abin2hex(cbtx_no_witness, cbtx_no_witness_size);
+	char *cbtx_hex = abin2hex(cbtx, cbtx_size);
 
 	free(cbtx);
 	free(cbtx_no_witness);
@@ -736,10 +740,13 @@ static bool submit_upstream_work(CURL *curl, struct work *work)
 			sprintf(str_cycle, "%s%s%x", str_cycle, i > 0 ? "," : "", work->cycle[i]);
 		}
 
-		applog(LOG_INFO, "");
-		applog(LOG_INFO, "nonce to send: %lu", work->data[19]);
-		applog(LOG_INFO, "cycle to send: %s", str_cycle);
-		applog(LOG_INFO, "");
+		char *headerstr = abin2hex((const unsigned char*)work->data, 81);
+
+		// applog(LOG_INFO, "");
+		// applog(LOG_INFO, "\t\tnonce to send: %lu", work->data[19]);
+		// applog(LOG_INFO, "\t\tcycle to send: %s", str_cycle);
+		// applog(LOG_INFO, "\t\theader to send: %s", headerstr);
+		// applog(LOG_INFO, "");
 
 		sprintf(req,
 			"{\"method\": \"mining.submit\", \"params\": [\"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\"], \"id\":4}",
@@ -1130,7 +1137,7 @@ static void stratum_gen_work(struct stratum_ctx *sctx, struct work *work)
 	work->data[18] = le32dec(sctx->job.nbits);
 	// move one byte of edgebits to the end of the message
 	// followed by "1" bit
-	work->data[20] = (*sctx->job.nedgebits << 24) | (1 << 23);
+	work->data[20] = (sctx->job.nedgebits << 24) | (1 << 23);
 	// lenth of the message in bits
 	work->data[31] = 0x00000288;
 
@@ -1210,8 +1217,9 @@ static void *miner_thread(void *userdata)
 			work_free(&work);
 			work_copy(&work, &g_work);
 			work.data[19] = 0xffffffffU / opt_n_threads * thr_id;
-		} else
+		} else {
 			work.data[19]++;
+		}
 		pthread_mutex_unlock(&g_work_lock);
 		work_restart[thr_id].restart = 0;
 
@@ -1221,6 +1229,7 @@ static void *miner_thread(void *userdata)
 		else
 			max64 = g_work_time + (have_longpoll ? LP_SCANTIME : opt_scantime)
 			      - time(NULL);
+
 		max64 *= thr_hashrates[thr_id];
 		if (max64 <= 0) {
 			max64 = 0x1fffff;
@@ -1231,7 +1240,6 @@ static void *miner_thread(void *userdata)
 			max_nonce = work.data[19] + max64;
 
 		hashes_done = 0;
-
 
 		uint32_t target_be[8];
 		char target_str[65];

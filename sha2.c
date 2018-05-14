@@ -478,7 +478,6 @@ int scancycles(int thr_id, uint32_t *pdata, const uint32_t *ptarget, uint32_t *c
 	uint32_t n = pdata[19] - 1;
 	uint8_t edgebits = pdata[20] >> 24;
 	const uint32_t first_nonce = pdata[19];
-	const uint32_t Htarg = ptarget[7];
 
 	cycle_with_size[0] = CUCKOO_CYCLE_LENGTH;
 

@@ -785,6 +785,8 @@ static bool send_line(struct stratum_ctx *sctx, char *s)
 	len = strlen(s);
 	s[len++] = '\n';
 
+	printf("%s\n", s);
+
 	while (len > 0) {
 		struct timeval timeout = {0, 0};
 		ssize_t n;
@@ -1201,9 +1203,10 @@ out:
 
 static bool stratum_notify(struct stratum_ctx *sctx, json_t *params)
 {
-	const char *job_id, *prevhash, *coinb1, *coinb2, *version, *nbits, *nedgebits, *ntime;
+	const char *job_id, *prevhash, *coinb1, *coinb2, *version, *nbits, *ntime;
 	size_t coinb1_size, coinb2_size;
 	bool clean, ret = false;
+	char nedgebits;
 	int merkle_count, i;
 	json_t *merkle_arr;
 	unsigned char **merkle;
@@ -1218,13 +1221,13 @@ static bool stratum_notify(struct stratum_ctx *sctx, json_t *params)
 	merkle_count = json_array_size(merkle_arr);
 	version = json_string_value(json_array_get(params, 5));
 	nbits = json_string_value(json_array_get(params, 6));
-	nedgebits = json_string_value(json_array_get(params, 7));
+	nedgebits = json_integer_value(json_array_get(params, 7));
 	ntime = json_string_value(json_array_get(params, 8));
 	clean = json_is_true(json_array_get(params, 9));
 
 	if (!job_id || !prevhash || !coinb1 || !coinb2 || !version || !nbits || !nedgebits || !ntime ||
 	    strlen(prevhash) != 64 || strlen(version) != 8 ||
-	    strlen(nbits) != 8 || strlen(nedgebits) != 2 || strlen(ntime) != 8) {
+	    strlen(nbits) != 8 || strlen(ntime) != 8) {
 		applog(LOG_ERR, "Stratum notify: invalid parameters");
 		goto out;
 	}
@@ -1252,6 +1255,7 @@ static bool stratum_notify(struct stratum_ctx *sctx, json_t *params)
 	sctx->job.xnonce2 = sctx->job.coinbase + coinb1_size + sctx->xnonce1_size;
 	hex2bin(sctx->job.coinbase, coinb1, coinb1_size);
 	memcpy(sctx->job.coinbase + coinb1_size, sctx->xnonce1, sctx->xnonce1_size);
+
 	if (!sctx->job.job_id || strcmp(sctx->job.job_id, job_id))
 		memset(sctx->job.xnonce2, 0, sctx->xnonce2_size);
 	hex2bin(sctx->job.xnonce2 + sctx->xnonce2_size, coinb2, coinb2_size);
@@ -1268,8 +1272,8 @@ static bool stratum_notify(struct stratum_ctx *sctx, json_t *params)
 
 	hex2bin(sctx->job.version, version, 4);
 	hex2bin(sctx->job.nbits, nbits, 4);
-	hex2bin(sctx->job.nedgebits, nedgebits, 1);
 	hex2bin(sctx->job.ntime, ntime, 4);
+	sctx->job.nedgebits = nedgebits;
 	sctx->job.clean = clean;
 
 	sctx->job.diff = sctx->next_diff;
@@ -1389,6 +1393,8 @@ bool stratum_handle_method(struct stratum_ctx *sctx, const char *s)
 	json_error_t err;
 	const char *method;
 	bool ret = false;
+
+	printf("stratum: %s\n", s);
 
 	val = JSON_LOADS(s, &err);
 	if (!val) {

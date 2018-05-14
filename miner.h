@@ -217,7 +217,7 @@ struct stratum_job {
 	unsigned char **merkle;
 	unsigned char version[4];
 	unsigned char nbits[4];
-	unsigned char nedgebits[1];
+	unsigned char nedgebits;
 	unsigned char ntime[4];
 	bool clean;
 	double diff;
