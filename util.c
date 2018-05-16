@@ -443,8 +443,10 @@ json_t *json_rpc_call(CURL *curl, const char *url,
 	}
 
 	/* If X-Long-Polling was found, activate long polling */
-	if (!have_longpoll && want_longpoll && hi.lp_path && !have_gbt &&
-	    allow_getwork && !have_stratum) {
+	if (!have_longpoll && want_longpoll && hi.lp_path && !have_gbt && !have_stratum) {
+		applog(LOG_ERR, "No supported protocol");
+		goto err_out;
+
 		have_longpoll = true;
 		tq_push(thr_info[longpoll_thr_id].q, hi.lp_path);
 		hi.lp_path = NULL;
@@ -784,8 +786,6 @@ static bool send_line(struct stratum_ctx *sctx, char *s)
 
 	len = strlen(s);
 	s[len++] = '\n';
-
-	printf("%s\n", s);
 
 	while (len > 0) {
 		struct timeval timeout = {0, 0};
@@ -1393,8 +1393,6 @@ bool stratum_handle_method(struct stratum_ctx *sctx, const char *s)
 	json_error_t err;
 	const char *method;
 	bool ret = false;
-
-	printf("stratum: %s\n", s);
 
 	val = JSON_LOADS(s, &err);
 	if (!val) {

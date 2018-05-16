@@ -14,6 +14,7 @@ jansson		http://www.digip.org/jansson/ # (jansson is included in-tree)
 ### Basic *nix build instructions
 
 ```
+sudo apt-get install build-essential libtool autotools-dev libcurl4-openssl-dev libboost-dev
 ./autogen.sh	# only needed if building from git repo
 ./nomacro.pl	# in case the assembler doesn't support macros
 ./configure CFLAGS="-O3" --disable-assembly --enable-march # Make sure -O3 is an O and not a zero!
@@ -63,8 +64,8 @@ dedicated to this program, https://bitcointalk.org/index.php?topic=55038.0
 
 #### Run as a solo miner pointed to meritd instance
 
-`./minerd -o http://127.0.0.1:2335 -D -O merit:local321 -t 2 --coinbase-addr=mPffSnc9UZ8kpZV1cRrY7MF3SWgxja7Eh6`
+`./minerd -o http://127.0.0.1:2335 -O merit:local321 -t 2 -C 2 --coinbase-addr=your_merit_address_or_alias`
 
 #### Run with pool supporting stratum protocol
 
-`./minerd -o stratum+tcp://127.0.0.1:3333 -u tony -D -t 1`
+`./minerd -o stratum+tcp://testnet.pool.merit.me:3333 -u your_merit_address_or_alias -t 2 -C 2`

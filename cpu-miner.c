@@ -108,7 +108,6 @@ bool opt_redirect = true;
 bool want_longpoll = true;
 bool have_longpoll = false;
 bool have_gbt = true;
-bool allow_getwork = true;
 bool want_stratum = true;
 bool have_stratum = false;
 bool use_syslog = false;
@@ -127,6 +126,8 @@ static char *rpc_userpass;
 static char *rpc_user, *rpc_pass;
 static int pk_script_size;
 static unsigned char pk_script[25];
+static unsigned char coinbase_addr[35] = "";
+bool have_addr = false;
 static char coinbase_sig[101] = "";
 char *opt_cert;
 char *opt_proxy;
@@ -176,7 +177,6 @@ Options:\n\
       --coinbase-addr=ADDR  payout address for solo mining\n\
       --coinbase-sig=TEXT  data to insert in the coinbase when possible\n\
       --no-longpoll      disable long polling support\n\
-      --no-getwork       disable getwork support\n\
       --no-gbt           disable getblocktemplate support\n\
       --no-stratum       disable X-Stratum support\n\
       --no-redirect      ignore requests to change the URL of the mining server\n\
@@ -220,7 +220,6 @@ static struct option const options[] = {
 	{ "debug", 0, NULL, 'D' },
 	{ "help", 0, NULL, 'h' },
 	{ "no-gbt", 0, NULL, 1011 },
-	{ "no-getwork", 0, NULL, 1010 },
 	{ "no-longpoll", 0, NULL, 1003 },
 	{ "no-redirect", 0, NULL, 1009 },
 	{ "no-stratum", 0, NULL, 1007 },
@@ -316,30 +315,6 @@ static bool jobj_binary(const json_t *obj, const char *key,
 	return true;
 }
 
-static bool work_decode(const json_t *val, struct work *work)
-{
-	int i;
-
-	if (unlikely(!jobj_binary(val, "data", work->data, sizeof(work->data)))) {
-		applog(LOG_ERR, "JSON invalid data");
-		goto err_out;
-	}
-	if (unlikely(!jobj_binary(val, "target", work->target, sizeof(work->target)))) {
-		applog(LOG_ERR, "JSON invalid target");
-		goto err_out;
-	}
-
-	for (i = 0; i < ARRAY_SIZE(work->data); i++)
-		work->data[i] = le32dec(work->data + i);
-	for (i = 0; i < ARRAY_SIZE(work->target); i++)
-		work->target[i] = le32dec(work->target + i);
-
-	return true;
-
-err_out:
-	return false;
-}
-
 static bool gbt_work_decode(const json_t *val, struct work *work)
 {
 	int i, n;
@@ -430,76 +405,76 @@ static bool gbt_work_decode(const json_t *val, struct work *work)
 	int orig_cbtx_pos = 0;
 
 	// if payout address is provided, build cb tx with this pk first
-	if (pk_script_size) {
-		bool script_sig_found = false;
+	// if (pk_script_size) {
+	// 	bool script_sig_found = false;
 
-		// original script pubkey is OP_HASH << script_id << OP_EQUAL
-		unsigned char *orig_pk_script_pos;
-		int orig_pk_script_size = 1 + 1 + 20 + 1; // script length byte + OP_HASH byte + script_id length byte + script_id + OP_EQUAL byte
+	// 	// original script pubkey is OP_HASH << script_id << OP_EQUAL
+	// 	unsigned char *orig_pk_script_pos;
+	// 	int orig_pk_script_size = 1 + 1 + 20 + 1; // script length byte + OP_HASH byte + script_id length byte + script_id + OP_EQUAL byte
 
-		do {
-			// find script length position
-			orig_pk_script_pos = memchr(orig_cbtx, 23, orig_cbtx_size); // 23 - length of script = 0x17
+	// 	do {
+	// 		// find script length position
+	// 		orig_pk_script_pos = memchr(orig_cbtx, 23, orig_cbtx_size); // 23 - length of script = 0x17
 
-			// script len + script_id len + script_id + OP_EQUAL = 135 = 0x87
-			if (*(unsigned char *)(orig_pk_script_pos + orig_pk_script_size) == 135) {
-				script_sig_found = true;
-			}
-		} while (!script_sig_found && orig_pk_script_pos != NULL);
+	// 		// script len + script_id len + script_id + OP_EQUAL = 135 = 0x87
+	// 		if (*(unsigned char *)(orig_pk_script_pos + orig_pk_script_size) == 135) {
+	// 			script_sig_found = true;
+	// 		}
+	// 	} while (!script_sig_found && orig_pk_script_pos != NULL);
 
-		if (script_sig_found) {
-			// updated coinbase tx length is: original cbtx len - orig_pk_script_size + new pubkey script length
-			int cbtx_size_full = orig_cbtx_size - orig_pk_script_size + pk_script_size;
-			cbtx = malloc(cbtx_size_full);
+	// 	if (script_sig_found) {
+	// 		// updated coinbase tx length is: original cbtx len - orig_pk_script_size + new pubkey script length
+	// 		int cbtx_size_full = orig_cbtx_size - orig_pk_script_size + pk_script_size;
+	// 		cbtx = malloc(cbtx_size_full);
 
-			// copy original cb till scriptPubKey
-			memcpy(cbtx, orig_cbtx, orig_pk_script_pos - orig_cbtx); // copy tx version
-			cbtx_size = orig_pk_script_pos - orig_cbtx;
+	// 		// copy original cb till scriptPubKey
+	// 		memcpy(cbtx, orig_cbtx, orig_pk_script_pos - orig_cbtx); // copy tx version
+	// 		cbtx_size = orig_pk_script_pos - orig_cbtx;
 
-			// skip origin tx data till the end of script_id (ends with OP_EQUAL byte)
-			orig_cbtx_pos = orig_pk_script_pos - orig_cbtx + orig_pk_script_size + 1;
+	// 		// skip origin tx data till the end of script_id (ends with OP_EQUAL byte)
+	// 		orig_cbtx_pos = orig_pk_script_pos - orig_cbtx + orig_pk_script_size + 1;
 
-			// set pk script
-			cbtx[cbtx_size++] = pk_script_size; // set pubkey script size
-			memcpy(cbtx + cbtx_size, pk_script, pk_script_size); // copy pubkey script
-			cbtx_size += pk_script_size;
+	// 		// set pk script
+	// 		cbtx[cbtx_size++] = pk_script_size; // set pubkey script size
+	// 		memcpy(cbtx + cbtx_size, pk_script, pk_script_size); // copy pubkey script
+	// 		cbtx_size += pk_script_size;
 
-			// copy last part of cb
-			memcpy(cbtx + cbtx_size, orig_cbtx + orig_cbtx_pos, cbtx_size_full - cbtx_size);
-			cbtx_size = cbtx_size_full;
+	// 		// copy last part of cb
+	// 		memcpy(cbtx + cbtx_size, orig_cbtx + orig_cbtx_pos, cbtx_size_full - cbtx_size);
+	// 		cbtx_size = cbtx_size_full;
 
-			// set locktime to 0
-			memset(cbtx + cbtx_size - 4, 0x00, 4);
+	// 		// set locktime to 0
+	// 		memset(cbtx + cbtx_size - 4, 0x00, 4);
 
-			free(orig_cbtx);
+	// 		free(orig_cbtx);
 
-			// build cb without witness data to get hash of it for merkle root
-			// 2 - size of dummy vin (0) and flags;
-			// 34 - size of witness script (2 bytes length for compat script size + 32 bytes of script)
-			int cbtx_no_witness_size_full = cbtx_size - 2 - 34;
-			cbtx_no_witness = malloc(cbtx_no_witness_size_full);
-			// copy tx version
-			memcpy(cbtx_no_witness, cbtx, 4);
-			cbtx_no_witness_size = 4;
+	// 		// build cb without witness data to get hash of it for merkle root
+	// 		// 2 - size of dummy vin (0) and flags;
+	// 		// 34 - size of witness script (2 bytes length for compat script size + 32 bytes of script)
+	// 		int cbtx_no_witness_size_full = cbtx_size - 2 - 34;
+	// 		cbtx_no_witness = malloc(cbtx_no_witness_size_full);
+	// 		// copy tx version
+	// 		memcpy(cbtx_no_witness, cbtx, 4);
+	// 		cbtx_no_witness_size = 4;
 
-			// copy last part of tx
-			memcpy(cbtx_no_witness + cbtx_no_witness_size, cbtx + 6, cbtx_no_witness_size_full - cbtx_no_witness_size);
-			cbtx_no_witness_size = cbtx_no_witness_size_full;
+	// 		// copy last part of tx
+	// 		memcpy(cbtx_no_witness + cbtx_no_witness_size, cbtx + 6, cbtx_no_witness_size_full - cbtx_no_witness_size);
+	// 		cbtx_no_witness_size = cbtx_no_witness_size_full;
 
-			// set locktime to 0
-			memset(cbtx_no_witness + cbtx_no_witness_size - 4, 0x00, 4);
+	// 		// set locktime to 0
+	// 		memset(cbtx_no_witness + cbtx_no_witness_size - 4, 0x00, 4);
 
-			memcpy(cbtx, cbtx_no_witness, cbtx_no_witness_size);
-			cbtx_size = cbtx_no_witness_size;
-		} else {
-			applog(LOG_DEBUG, "DEBUG: scriptPubKey is not found in coinbase tx. Using payout script from server");
-			cbtx = orig_cbtx;
-			cbtx_size = orig_cbtx_size;
-		}
-	} else {
-		cbtx = orig_cbtx;
-		cbtx_size = orig_cbtx_size;
-	}
+	// 		memcpy(cbtx, cbtx_no_witness, cbtx_no_witness_size);
+	// 		cbtx_size = cbtx_no_witness_size;
+	// 	} else {
+	// 		applog(LOG_DEBUG, "DEBUG: scriptPubKey is not found in coinbase tx. Using payout script from server");
+	// 		cbtx = orig_cbtx;
+	// 		cbtx_size = orig_cbtx_size;
+	// 	}
+	// } else {
+	cbtx = orig_cbtx;
+	cbtx_size = orig_cbtx_size;
+	// }
 
 
 	/* find count and size of invites */
@@ -539,7 +514,7 @@ static bool gbt_work_decode(const json_t *val, struct work *work)
 	}
 
 	n = varint_encode(txc_vi, tx_count);
-	work->txs = malloc(2 * (n + cbtx_no_witness_size + tx_size) + 1);
+	work->txs = malloc(2 * (n + cbtx_size + tx_size) + 1);
 	bin2hex(work->txs, txc_vi, n);
 
 	n = varint_encode(invc_vi, inv_count);
@@ -643,7 +618,7 @@ static bool gbt_work_decode(const json_t *val, struct work *work)
 	work->data[31] = 0x00000288;
 
 	if (unlikely(!jobj_binary(val, "target", target, sizeof(target)))) {
-		applog(LOG_ERR, "JSON invalid target");
+		applog(LOG_ERR, "gbt_work_decode JSON invalid target");
 		goto out;
 	}
 	for (i = 0; i < ARRAY_SIZE(work->target); i++)
@@ -731,22 +706,14 @@ static bool submit_upstream_work(CURL *curl, struct work *work)
 		bin2hex(noncestr, (const unsigned char *)(&nonce), 4);
 		xnonce2str = abin2hex(work->xnonce2, work->xnonce2_len);
 		// max length of hex encoded edges + commas
-		int cycle_str_length = (32 / 4 + 1) * CUCKOO_CYCLE_LENGTH - 1;
+		const int cycle_str_length = (8 + 1) * CUCKOO_CYCLE_LENGTH - 1;
 		req = malloc(256 + cycle_str_length + strlen(rpc_user) + strlen(work->job_id) + 2 * work->xnonce2_len);
 
 		// TODO replace with cycle hex encoded as a set (length + array in hex)
-		char str_cycle[cycle_str_length];
+		char str_cycle[cycle_str_length] = "";
 		for (int i = 0; i < CUCKOO_CYCLE_LENGTH; i++) {
 			sprintf(str_cycle, "%s%s%x", str_cycle, i > 0 ? "," : "", work->cycle[i]);
 		}
-
-		char *headerstr = abin2hex((const unsigned char*)work->data, 81);
-
-		// applog(LOG_INFO, "");
-		// applog(LOG_INFO, "\t\tnonce to send: %lu", work->data[19]);
-		// applog(LOG_INFO, "\t\tcycle to send: %s", str_cycle);
-		// applog(LOG_INFO, "\t\theader to send: %s", headerstr);
-		// applog(LOG_INFO, "");
 
 		sprintf(req,
 			"{\"method\": \"mining.submit\", \"params\": [\"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\"], \"id\":4}",
@@ -816,28 +783,9 @@ static bool submit_upstream_work(CURL *curl, struct work *work)
 
 		json_decref(val);
 	} else {
-		/* build hex string */
-		for (i = 0; i < ARRAY_SIZE(work->data); i++)
-			le32enc(work->data + i, work->data[i]);
-		bin2hex(data_str, (unsigned char *)work->data, sizeof(work->data));
-
-		/* build JSON-RPC request */
-		sprintf(s,
-			"{\"method\": \"getwork\", \"params\": [ \"%s\" ], \"id\":1}\r\n",
-			data_str);
-
-		/* issue JSON-RPC request */
-		val = json_rpc_call(curl, rpc_url, rpc_userpass, s, NULL, 0);
-		if (unlikely(!val)) {
-			applog(LOG_ERR, "submit_upstream_work json_rpc_call failed");
-			goto out;
-		}
-
-		res = json_object_get(val, "result");
-		reason = json_object_get(val, "reject-reason");
-		share_result(json_is_true(res), reason ? json_string_value(reason) : NULL);
-
-		json_decref(val);
+		applog(LOG_ERR, "No usable protocol");
+		rc = false;
+		goto out;
 	}
 
 	rc = true;
@@ -846,18 +794,15 @@ out:
 	return rc;
 }
 
-static const char *getwork_req =
-	"{\"method\": \"getwork\", \"params\": [], \"id\":0}\r\n";
-
 #define GBT_CAPABILITIES "[\"coinbasetxn\", \"coinbasevalue\", \"longpoll\", \"workid\"]"
 #define GBT_RULES "[\"segwit\"]"
 
 static const char *gbt_req =
 	"{\"method\": \"getblocktemplate\", \"params\": [{\"capabilities\": "
-	GBT_CAPABILITIES ", \"rules\": " GBT_RULES "}], \"id\":0}\r\n";
+	GBT_CAPABILITIES ", \"rules\": " GBT_RULES "}, \"%s\"], \"id\":0}\r\n";
 static const char *gbt_lp_req =
 	"{\"method\": \"getblocktemplate\", \"params\": [{\"capabilities\": "
-	GBT_CAPABILITIES ", \"rules\": " GBT_RULES ", \"longpollid\": \"%s\"}], \"id\":0}\r\n";
+	GBT_CAPABILITIES ", \"rules\": " GBT_RULES ", \"longpollid\": \"%s\"}, \"%s\"], \"id\":0}\r\n";
 
 static bool get_upstream_work(CURL *curl, struct work *work)
 {
@@ -867,11 +812,26 @@ static bool get_upstream_work(CURL *curl, struct work *work)
 	struct timeval tv_start, tv_end, diff;
 
 start:
+	if (!have_gbt) {
+		applog(LOG_ERR, "No usable protocol");
+		return false;
+	}
+
+	if (!have_addr) {
+		applog(LOG_ERR, "Coinbase not present");
+		return false;
+	}
+
+	char *req = NULL;
+
+	req = malloc(strlen(gbt_req) + strlen(coinbase_addr) + 1);
+	sprintf(req, gbt_req, coinbase_addr);
 	gettimeofday(&tv_start, NULL);
-	val = json_rpc_call(curl, rpc_url, rpc_userpass,
-			    have_gbt ? gbt_req : getwork_req,
-			    &err, have_gbt ? JSON_RPC_QUIET_404 : 0);
+
+	printf("%s\n", req);
+	val = json_rpc_call(curl, rpc_url, rpc_userpass, req, &err, JSON_RPC_QUIET_404);
 	gettimeofday(&tv_end, NULL);
+	free(req);
 
 	if (have_stratum) {
 		if (val)
@@ -879,32 +839,21 @@ start:
 		return true;
 	}
 
-	if (!have_gbt && !allow_getwork) {
-		applog(LOG_ERR, "No usable protocol");
-		if (val)
-			json_decref(val);
+	if (have_gbt && !val && err == CURLE_OK) {
+		applog(LOG_ERR, "getblocktemplate failed");
 		return false;
-	}
-
-	if (have_gbt && allow_getwork && !val && err == CURLE_OK) {
-		applog(LOG_INFO, "getblocktemplate failed, falling back to getwork");
-		have_gbt = false;
-		goto start;
 	}
 
 	if (!val)
 		return false;
 
-	if (have_gbt) {
-		rc = gbt_work_decode(json_object_get(val, "result"), work);
-		applog(LOG_INFO, "get_upstream_work gbt_work_decode done");
+	rc = gbt_work_decode(json_object_get(val, "result"), work);
+	applog(LOG_INFO, "get_upstream_work gbt_work_decode done");
 
-		if (!have_gbt) {
-			json_decref(val);
-			goto start;
-		}
-	} else
-		rc = work_decode(json_object_get(val, "result"), work);
+	if (!have_gbt) {
+		json_decref(val);
+		goto start;
+	}
 
 	if (opt_debug && rc) {
 		timeval_subtract(&diff, &tv_end, &tv_start);
@@ -1249,11 +1198,10 @@ static void *miner_thread(void *userdata)
 		}
 		bin2hex(target_str, (unsigned char *)target_be, 32);
 
-		applog(LOG_INFO, "before scanhash; nonce = %lu, edgebits = %d; max_nonce = %lu", work.data[19], work.data[20] >> 24, max_nonce);
-		applog(LOG_INFO, "target = %s", target_str);
-
 		/* scan nonces for a proof-of-work hash */
 		gettimeofday(&tv_start, NULL);
+
+		memset(work.cycle, 0x00, sizeof(work.cycle));
 
 		rc = scancycles(thr_id, work.data, work.target, work.cycle, max_nonce, &hashes_done, opt_n_cuckoo_threads);
 
@@ -1344,15 +1292,16 @@ start:
 		char *req = NULL;
 		int err;
 
-		if (have_gbt) {
-			req = malloc(strlen(gbt_lp_req) + strlen(lp_id) + 1);
-			sprintf(req, gbt_lp_req, lp_id);
+		if (!have_gbt) {
+			goto out;
 		}
 
-		val = json_rpc_call(curl, lp_url, rpc_userpass,
-				    req ? req : getwork_req, &err,
-				    JSON_RPC_LONGPOLL);
+		req = malloc(strlen(gbt_lp_req) + strlen(lp_id) + sizeof(coinbase_addr) + 1);
+		sprintf(req, gbt_lp_req, lp_id, coinbase_addr);
+
+		val = json_rpc_call(curl, lp_url, rpc_userpass, req, &err, JSON_RPC_LONGPOLL);
 		free(req);
+
 		if (have_stratum) {
 			if (val)
 				json_decref(val);
@@ -1366,10 +1315,7 @@ start:
 			submit_old = soval ? json_is_true(soval) : false;
 			pthread_mutex_lock(&g_work_lock);
 			work_free(&g_work);
-			if (have_gbt)
-				rc = gbt_work_decode(res, &g_work);
-			else
-				rc = work_decode(res, &g_work);
+			rc = gbt_work_decode(res, &g_work);
 			if (rc) {
 				time(&g_work_time);
 				restart_threads();
@@ -1750,14 +1696,13 @@ static void parse_arg(int key, char *arg, char *pname)
 	case 1009:
 		opt_redirect = false;
 		break;
-	case 1010:
-		allow_getwork = false;
-		break;
 	case 1011:
 		have_gbt = false;
 		break;
 	case 1013:			/* --coinbase-addr */
-		pk_script_size = address_to_script(pk_script, sizeof(pk_script), arg);
+		strcpy(coinbase_addr, arg);
+		have_addr = true;
+		pk_script_size = address_to_script(pk_script, sizeof(pk_script), coinbase_addr);
 		if (!pk_script_size) {
 			fprintf(stderr, "%s: invalid address -- '%s'\n",
 				pname, arg);

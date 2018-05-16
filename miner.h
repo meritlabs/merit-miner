@@ -177,7 +177,6 @@ extern int opt_timeout;
 extern bool want_longpoll;
 extern bool have_longpoll;
 extern bool have_gbt;
-extern bool allow_getwork;
 extern bool want_stratum;
 extern bool have_stratum;
 extern char *opt_cert;

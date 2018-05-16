@@ -472,7 +472,7 @@ int scancycles(int thr_id, uint32_t *pdata, const uint32_t *ptarget, uint32_t *c
 	uint32_t data[64] __attribute__((aligned(128)));
 	uint32_t hash[8] __attribute__((aligned(32)));
 	uint32_t cycle_hash[8] __attribute__((aligned(32)));
-	uint8_t cycle_with_size[257]; // cycle bytes prefixed with cycle length
+	uint8_t cycle_with_size[1 + sizeof(uint32_t) * CUCKOO_CYCLE_LENGTH]; // cycle bytes prefixed with cycle length
 	uint32_t midstate[8] __attribute__((aligned(32)));
 	uint32_t prehash[8] __attribute__((aligned(32)));
 	uint32_t n = pdata[19] - 1;
@@ -508,8 +508,8 @@ int scancycles(int thr_id, uint32_t *pdata, const uint32_t *ptarget, uint32_t *c
 			continue;
 		}
 
-		memcpy(&cycle_with_size[1], cycle, sizeof(uint32_t) * CUCKOO_CYCLE_LENGTH);
-		sha256d((uint8_t*)cycle_hash, cycle_with_size, sizeof(uint32_t) * CUCKOO_CYCLE_LENGTH + 1);
+		memcpy(&cycle_with_size[1], cycle, sizeof(cycle_with_size) - 1);
+		sha256d((uint8_t*)cycle_hash, cycle_with_size, sizeof(cycle_with_size));
 
 		if (fulltest(cycle_hash, ptarget)) {
 			*hashes_done = n - first_nonce + 1;
