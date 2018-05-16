@@ -14,7 +14,7 @@ jansson		http://www.digip.org/jansson/ # (jansson is included in-tree)
 ### Basic *nix build instructions
 
 ```
-sudo apt-get install build-essential libtool autotools-dev libcurl4-openssl-dev libboost-dev
+sudo apt-get install build-essential libtool automake autotools-dev libcurl4-openssl-dev libboost-dev
 ./autogen.sh	# only needed if building from git repo
 ./nomacro.pl	# in case the assembler doesn't support macros
 ./configure CFLAGS="-O3" --disable-assembly --enable-march # Make sure -O3 is an O and not a zero!

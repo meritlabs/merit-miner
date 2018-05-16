@@ -146,6 +146,9 @@ static unsigned long accepted_count = 0L;
 static unsigned long rejected_count = 0L;
 static double *thr_hashrates;
 
+// max length of hex encoded edges + commas
+#define MAX_CUCKOO_STR_LENGTH (8 + 1) * CUCKOO_CYCLE_LENGTH - 1
+
 #ifdef HAVE_GETOPT_LONG
 #include <getopt.h>
 #else
@@ -705,12 +708,9 @@ static bool submit_upstream_work(CURL *curl, struct work *work)
 		bin2hex(ntimestr, (const unsigned char *)(&ntime), 4);
 		bin2hex(noncestr, (const unsigned char *)(&nonce), 4);
 		xnonce2str = abin2hex(work->xnonce2, work->xnonce2_len);
-		// max length of hex encoded edges + commas
-		const int cycle_str_length = (8 + 1) * CUCKOO_CYCLE_LENGTH - 1;
-		req = malloc(256 + cycle_str_length + strlen(rpc_user) + strlen(work->job_id) + 2 * work->xnonce2_len);
+		req = malloc(256 + MAX_CUCKOO_STR_LENGTH + strlen(rpc_user) + strlen(work->job_id) + 2 * work->xnonce2_len);
 
-		// TODO replace with cycle hex encoded as a set (length + array in hex)
-		char str_cycle[cycle_str_length] = "";
+		char str_cycle[MAX_CUCKOO_STR_LENGTH] = "";
 		for (int i = 0; i < CUCKOO_CYCLE_LENGTH; i++) {
 			sprintf(str_cycle, "%s%s%x", str_cycle, i > 0 ? "," : "", work->cycle[i]);
 		}
