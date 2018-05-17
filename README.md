@@ -9,6 +9,7 @@ License: GPLv2.  See [LICENSE](LICENSE.md) for details.
 
 ### Dependencies
 ```
+libboost    https://www.boost.org/
 libcurl		http://curl.haxx.se/libcurl/
 jansson		http://www.digip.org/jansson/ # (jansson is included in-tree)
 ```
@@ -42,6 +43,52 @@ In the MSYS shell, run:
 LIBCURL="-lcurldll" ./configure CFLAGS="-O3"
 make
 ```
+
+### Windows build instructions using WSL 
+
+With Windows 10, Microsoft has released a new feature named the [Windows
+Subsystem for Linux (WSL)](https://msdn.microsoft.com/commandline/wsl/about). This
+feature allows you to run a bash shell directly on Windows in an Ubuntu-based
+environment. Within this environment you can cross compile for Windows without
+the need for a separate Linux VM or server.
+
+This feature is not supported in versions of Windows prior to Windows 10 or on
+Windows Server SKUs. In addition, it is available [only for 64-bit versions of
+Windows](https://msdn.microsoft.com/en-us/commandline/wsl/install_guide).
+
+For Windows 10 systems with the Fall Creators Update applied (version >= 16215.0) use the Windows Store
+to install Ubuntu. Search for "Linux" in the Windows Store and install the free "Ubuntu" application.
+Full instructions are available on the above link.
+
+To get the bash shell, you must first activate the feature in Windows.
+
+1. Turn on Developer Mode
+  * Open Settings -> Update and Security -> For developers
+  * Select the Developer Mode radio button
+  * Restart if necessary
+2. Enable the Windows Subsystem for Linux feature
+  * From Start, search for "Turn Windows features on or off" (type 'turn')
+  * Select Windows Subsystem for Linux (beta)
+  * Click OK
+  * Restart if necessary
+3. Complete Installation
+  * Open a cmd prompt and type "bash"
+  * Accept the license
+  * Create a new UNIX user account (this is a separate account from your Windows account)
+
+Next actions are performed in WSL Bash application and assumes that Ubuntu provider is used.
+
+1. Install required libraries:
+    sudo apt install libcurl4-openssl-dev
+    sudo apt install libboost-all-dev
+2. Execute configuration and build commands:
+    ```
+    ./autogen.sh	# only needed if building from git repo
+    ./nomacro.pl	# in case the assembler doesn't support macros
+    ./configure CFLAGS="-O3" --disable-assembly --enable-march # Make sure -O3 is an O and not a zero!
+    make
+    ```
+3. Run minerd using Bash application as described in (Usage instructions)[#usage-instructions]
 
 ### Issues
 - asm code is not supported and miner should be built with `--disable-assembly` flag
