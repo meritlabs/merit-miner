@@ -1,5 +1,6 @@
 /*
  * Copyright 2009 Colin Percival, 2011 ArtForz, 2011-2014 pooler
+ * Copyright 2017-2018 The Merit Foundation developers
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

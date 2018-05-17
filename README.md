@@ -1,9 +1,10 @@
 # merit-miner
 
-This is a multi-threaded CPU miner for Litecoin and Bitcoin,
-fork of Jeff Garzik's reference cpuminer.
+This is a multi-threaded CPU miner for Merit.
+It can be used for pool mining or solo mining with local Merit daemon.
+The softtware is based on original miner for Litecoin and Bitcoin, fork of Jeff Garzik's reference cpuminer.
 
-License: GPLv2.  See COPYING for details.
+License: GPLv2.  See [COPYING](COPYING) for details.
 
 ### Dependencies
 ```
