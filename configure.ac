@@ -1,4 +1,4 @@
-AC_INIT([cpuminer], [2.5.0])
+AC_INIT([merit-miner], [0.1.0])
 
 AC_PREREQ([2.59c])
 AC_CANONICAL_SYSTEM
