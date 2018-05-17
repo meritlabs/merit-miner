@@ -1,5 +1,6 @@
 /*
  * Copyright 2011-2012, 2014 pooler@litecoinpool.org
+ * Copyright 2017-2018 The Merit Foundation developers
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
