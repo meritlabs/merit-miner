@@ -10,8 +10,8 @@ License: GPLv2.  See [LICENSE](LICENSE.md) for details.
 ### Dependencies
 ```
 libboost    https://www.boost.org/
-libcurl		http://curl.haxx.se/libcurl/
-jansson		http://www.digip.org/jansson/ # (jansson is included in-tree)
+libcurl     http://curl.haxx.se/libcurl/
+jansson     http://www.digip.org/jansson/ # (jansson is included in-tree)
 ```
 
 ### Basic *nix build instructions
@@ -79,8 +79,10 @@ To get the bash shell, you must first activate the feature in Windows.
 Next actions are performed in WSL Bash application and assumes that Ubuntu provider is used.
 
 1. Install required libraries:
+    ```
     sudo apt install libcurl4-openssl-dev
     sudo apt install libboost-all-dev
+    ```
 2. Execute configuration and build commands:
     ```
     ./autogen.sh	# only needed if building from git repo
