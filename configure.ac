@@ -67,8 +67,9 @@ case $target in
 esac
 
 AC_ARG_ENABLE([assembly],
-  AS_HELP_STRING([--disable-assembly], [disable assembly-language routines]))
-if test x$enable_assembly != xno; then
+  AS_HELP_STRING([--enable-assembly], [enable assembly-language routines]))
+
+if test x$enable_assembly == xyes; then
   AC_DEFINE([USE_ASM], [1], [Define to 1 if assembly routines are wanted.])
 fi
 
@@ -77,12 +78,18 @@ AC_ARG_ENABLE([march],
     [enable_march=$enableval],
     [enable_march=no])
 
-if test "x$enable_march" = xyes; then
-  CXXFLAGS="$CXXFLAGS -march=native"
-  CFLAGS="$CFLAGS -march=native"
-fi
+CFLAGS="$CFLAGS -O3"
 
-if test x$enable_assembly != xno -a x$have_x86_64 = xtrue
+AC_MSG_CHECKING(whether we can compile with native arch for AVX2 support)
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(,[ _mm256_broadcastq_epi64(_mm_cvtsi64_si128(0xff)); ])],
+  CFLAGS="$CFLAGS -march=native"
+  AC_MSG_RESULT(yes)
+,
+  AC_MSG_RESULT(no)
+  AC_MSG_WARN([The assembler does not support the AVX2 instruction set.])
+)
+
+if test x$enable_assembly == xyes -a x$have_x86_64 = xtrue
 then
   AC_MSG_CHECKING(whether we can compile AVX code)
   AC_COMPILE_IFELSE([AC_LANG_PROGRAM(,[asm ("vmovdqa %ymm0, %ymm1");])],

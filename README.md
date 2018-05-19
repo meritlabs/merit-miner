@@ -20,7 +20,7 @@ jansson     http://www.digip.org/jansson/ # (jansson is included in-tree)
 sudo apt-get install build-essential libtool automake autotools-dev libcurl4-openssl-dev libboost-dev
 ./autogen.sh	# only needed if building from git repo
 ./nomacro.pl	# in case the assembler doesn't support macros
-./configure CFLAGS="-O3" --disable-assembly --enable-march # Make sure -O3 is an O and not a zero!
+./configure
 make
 ```
 
@@ -41,11 +41,11 @@ Install libcurl devel (http://curl.haxx.se/download.html)
 In the MSYS shell, run:
 ```
 ./autogen.sh	# only needed if building from git repo
-LIBCURL="-lcurldll" ./configure CFLAGS="-O3"
+LIBCURL="-lcurldll" ./configure
 make
 ```
 
-### Windows build instructions using WSL 
+### Windows build instructions using WSL
 
 With Windows 10, Microsoft has released a new feature named the [Windows
 Subsystem for Linux (WSL)](https://msdn.microsoft.com/commandline/wsl/about). This
@@ -88,13 +88,10 @@ Next actions are performed in WSL Bash application and assumes that Ubuntu provi
     ```
     ./autogen.sh	# only needed if building from git repo
     ./nomacro.pl	# in case the assembler doesn't support macros
-    ./configure CFLAGS="-O3" --disable-assembly --enable-march # Make sure -O3 is an O and not a zero!
+    ./configure
     make
     ```
 3. Run minerd using Bash application as described in (Usage instructions)[#usage-instructions]
-
-### Issues
-- asm code is not supported and miner should be built with `--disable-assembly` flag
 
 ### Usage instructions
 
