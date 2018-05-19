@@ -24,10 +24,6 @@ sudo apt-get install build-essential libtool automake autotools-dev libcurl4-ope
 make
 ```
 
-### Notes for AIX users
-- To build a 64-bit binary, export OBJECT_MODE=64
-- GNU-style long options are not supported, but are accessible via configuration file
-
 ### Basic Windows build instructions, using MinGW
 
 Install MinGW and the MSYS Developer Tool Kit (http://www.mingw.org/)
@@ -95,7 +91,7 @@ Next actions are performed in WSL Bash application and assumes that Ubuntu provi
 
 ### Usage instructions
 
-Run `minerd --help` to see options.
+Run `./minerd --help` to see options.
 
 Connecting through a proxy:  Use the --proxy option.
 To use a SOCKS proxy, add a socks4:// or socks5:// prefix to the proxy host.
@@ -105,15 +101,12 @@ If no protocol is specified, the proxy is assumed to be a HTTP proxy.
 When the --proxy option is not used, the program honors the http_proxy
 and all_proxy environment variables.
 
-Also many issues and FAQs are covered in the forum thread
-dedicated to this program, https://bitcointalk.org/index.php?topic=55038.0
-
 ### Exmaple usage
 
 #### Run as a solo miner pointed to meritd instance
 
-`./minerd -o http://127.0.0.1:2335 -O merit:local321 -t 2 -C 2 --coinbase-addr=your_merit_address_or_alias`
+`./minerd -o http://127.0.0.1:2335 -O merit:localpwd -t 2 -C 2 --coinbase-addr=your_merit_address_or_alias`
 
 #### Run with pool supporting stratum protocol
 
-`./minerd -o stratum+tcp://testnet.pool.merit.me:3333 -u your_merit_address_or_alias -t 2 -C 2`
+`./minerd -o stratum+tcp://pool.merit.me:3333 -u your_merit_address_or_alias -t 2 -C 2`
