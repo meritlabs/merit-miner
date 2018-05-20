@@ -87,7 +87,7 @@ Next actions are performed in WSL Bash application and assumes that Ubuntu provi
     ./configure
     make
     ```
-3. Run minerd using Bash application as described in (Usage instructions)[#usage-instructions]
+3. Run minerd using Bash application as described in [Usage instructions](#usage-instructions)
 
 ### Usage instructions
 
