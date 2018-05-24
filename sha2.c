@@ -468,7 +468,7 @@ static inline void sha256d_ms(uint32_t *hash, uint32_t *W,
 #endif /* EXTERN_SHA256 */
 
 int scancycles(int thr_id, uint32_t *pdata, const uint32_t *ptarget, uint32_t *cycle,
-			   uint32_t max_nonce, unsigned long *hashes_done, int cuckoo_threads)
+			   uint32_t max_nonce, unsigned long *cycles_found, int cuckoo_threads)
 {
 	uint32_t data[64] __attribute__((aligned(128)));
 	uint32_t hash[8] __attribute__((aligned(32)));
@@ -478,7 +478,7 @@ int scancycles(int thr_id, uint32_t *pdata, const uint32_t *ptarget, uint32_t *c
 	uint32_t prehash[8] __attribute__((aligned(32)));
 	uint32_t n = pdata[19] - 1;
 	uint8_t edgebits = pdata[20] >> 24;
-	const uint32_t first_nonce = pdata[19];
+	const uint32_t Htarg = ptarget[7];
 
 	cycle_with_size[0] = CUCKOO_CYCLE_LENGTH;
 
@@ -503,18 +503,16 @@ int scancycles(int thr_id, uint32_t *pdata, const uint32_t *ptarget, uint32_t *c
 		}
 		bin2hex(hash_str, (unsigned char *)hash_be, 32);
 
-		bool cycleFound = findcycle(hash_str, edgebits, CUCKOO_CYCLE_LENGTH, cycle, cuckoo_threads);
-
-		if (!cycleFound) {
+		if (!findcycle(hash_str, edgebits, CUCKOO_CYCLE_LENGTH, cycle, cuckoo_threads)) {
 			continue;
 		}
+
+		(*cycles_found)++;
 
 		memcpy(&cycle_with_size[1], cycle, sizeof(cycle_with_size) - 1);
 		sha256d((uint8_t*)cycle_hash, cycle_with_size, sizeof(cycle_with_size));
 
-		if (fulltest(cycle_hash, ptarget)) {
-			*hashes_done = n - first_nonce + 1;
-
+		if (cycle_hash[7] <= Htarg && fulltest(cycle_hash, ptarget)) {
 			if (opt_debug) {
 				uint32_t chash_be[8];
 				char cycle_hash_string1[65];
@@ -532,7 +530,6 @@ int scancycles(int thr_id, uint32_t *pdata, const uint32_t *ptarget, uint32_t *c
 		}
 	} while (n < max_nonce && !work_restart[thr_id].restart);
 
-	*hashes_done = n - first_nonce + 1;
 	pdata[19] = n;
 
 	return 0;

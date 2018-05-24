@@ -145,7 +145,7 @@ static pthread_mutex_t stats_lock;
 
 static unsigned long accepted_count = 0L;
 static unsigned long rejected_count = 0L;
-static double *thr_hashrates;
+static double *thr_cyclerates;
 
 // max length of hex encoded edges + commas
 #define MAX_CUCKOO_STR_LENGTH (8 + 1) * CUCKOO_CYCLE_LENGTH - 1
@@ -661,18 +661,18 @@ out:
 static void share_result(int result, const char *reason)
 {
 	char s[345];
-	double hashrate;
+	double cyclerate;
 	int i;
 
-	hashrate = 0.;
+	cyclerate = 0.;
 	pthread_mutex_lock(&stats_lock);
 	for (i = 0; i < opt_n_threads; i++)
-		hashrate += thr_hashrates[i];
+		cyclerate += thr_cyclerates[i];
 	result ? accepted_count++ : rejected_count++;
 	pthread_mutex_unlock(&stats_lock);
 
-	sprintf(s, hashrate >= 1e6 ? "%.0f" : "%.2f", hashrate);
-	applog(LOG_INFO, "accepted: %lu/%lu (%.2f%%), %s hash/s %s",
+	sprintf(s, cyclerate >= 1e6 ? "%.0f" : "%.4f", cyclerate);
+	applog(LOG_INFO, "accepted: %lu/%lu (%.4f%%), %s cycle/s %s",
 		   accepted_count,
 		   accepted_count + rejected_count,
 		   100. * accepted_count / (accepted_count + rejected_count),
@@ -1099,6 +1099,7 @@ static void stratum_gen_work(struct stratum_ctx *sctx, struct work *work)
 		       work->job_id, xnonce2str, swab32(work->data[17]));
 		free(xnonce2str);
 	}
+	applog(LOG_DEBUG, "setting diff to target: %f", sctx->job.diff);
 	diff_to_target(work->target, sctx->job.diff);
 }
 
@@ -1131,7 +1132,7 @@ static void *miner_thread(void *userdata)
 	}
 
 	while (1) {
-		unsigned long hashes_done;
+		unsigned long cycles_found;
 		struct timeval tv_start, tv_end, diff;
 		int64_t max64;
 		int rc;
@@ -1180,7 +1181,7 @@ static void *miner_thread(void *userdata)
 			max64 = g_work_time + (have_longpoll ? LP_SCANTIME : opt_scantime)
 			      - time(NULL);
 
-		max64 *= thr_hashrates[thr_id];
+		max64 *= thr_cyclerates[thr_id];
 		if (max64 <= 0) {
 			max64 = 0x1fffff;
 		}
@@ -1189,7 +1190,7 @@ static void *miner_thread(void *userdata)
 		else
 			max_nonce = work.data[19] + max64;
 
-		hashes_done = 0;
+		cycles_found = 0;
 
 		uint32_t target_be[8];
 		char target_str[65];
@@ -1204,29 +1205,29 @@ static void *miner_thread(void *userdata)
 
 		memset(work.cycle, 0x00, sizeof(work.cycle));
 
-		rc = scancycles(thr_id, work.data, work.target, work.cycle, max_nonce, &hashes_done, opt_n_cuckoo_threads);
+		rc = scancycles(thr_id, work.data, work.target, work.cycle, max_nonce, &cycles_found, opt_n_cuckoo_threads);
 
 		/* record scanhash elapsed time */
 		gettimeofday(&tv_end, NULL);
 		timeval_subtract(&diff, &tv_end, &tv_start);
 		if (diff.tv_usec || diff.tv_sec) {
 			pthread_mutex_lock(&stats_lock);
-			thr_hashrates[thr_id] =
-				hashes_done / (diff.tv_sec + 1e-6 * diff.tv_usec);
+			thr_cyclerates[thr_id] =
+				cycles_found / (diff.tv_sec + 1e-6 * diff.tv_usec);
 			pthread_mutex_unlock(&stats_lock);
 		}
 		if (!opt_quiet) {
-			sprintf(s, thr_hashrates[thr_id] >= 1e6 ? "%.0f" : "%.2f", thr_hashrates[thr_id]);
-			applog(LOG_INFO, "thread %d: %lu hashes, %s hash/s",
-				thr_id, hashes_done, s);
+			sprintf(s, thr_cyclerates[thr_id] >= 1e6 ? "%.0f" : "%.2f", thr_cyclerates[thr_id]);
+			applog(LOG_INFO, "thread %d: %lu cycles, %s cycle/s",
+				thr_id, cycles_found, s);
 		}
 		if (opt_benchmark && thr_id == opt_n_threads - 1) {
-			double hashrate = 0.;
-			for (i = 0; i < opt_n_threads && thr_hashrates[i]; i++)
-				hashrate += thr_hashrates[i];
+			double cyclerate = 0.;
+			for (i = 0; i < opt_n_threads && thr_cyclerates[i]; i++)
+				cyclerate += thr_cyclerates[i];
 			if (i == opt_n_threads) {
-				sprintf(s, hashrate >= 1e6 ? "%.0f" : "%.2f", hashrate);
-				applog(LOG_INFO, "Total: %s hash/s", s);
+				sprintf(s, cyclerate >= 1e6 ? "%.0f" : "%.4f", cyclerate);
+				applog(LOG_INFO, "Total: %s cycle/s", s);
 			}
 		}
 
@@ -1895,8 +1896,8 @@ int main(int argc, char *argv[])
 	if (!thr_info)
 		return 1;
 
-	thr_hashrates = (double *) calloc(opt_n_threads, sizeof(double));
-	if (!thr_hashrates)
+	thr_cyclerates = (double *) calloc(opt_n_threads, sizeof(double));
+	if (!thr_cyclerates)
 		return 1;
 
 	/* init workio thread info */
