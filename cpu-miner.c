@@ -829,7 +829,6 @@ start:
 	sprintf(req, gbt_req, coinbase_addr);
 	gettimeofday(&tv_start, NULL);
 
-	printf("%s\n", req);
 	val = json_rpc_call(curl, rpc_url, rpc_userpass, req, &err, JSON_RPC_QUIET_404);
 	gettimeofday(&tv_end, NULL);
 	free(req);
@@ -1099,7 +1098,6 @@ static void stratum_gen_work(struct stratum_ctx *sctx, struct work *work)
 		       work->job_id, xnonce2str, swab32(work->data[17]));
 		free(xnonce2str);
 	}
-	applog(LOG_DEBUG, "setting diff to target: %f", sctx->job.diff);
 	diff_to_target(work->target, sctx->job.diff);
 }
 
