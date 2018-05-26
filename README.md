@@ -65,27 +65,35 @@ To get the bash shell, you must first activate the feature in Windows.
   * Restart if necessary
 2. Enable the Windows Subsystem for Linux feature
   * From Start, search for "Turn Windows features on or off" (type 'turn')
-  * Select Windows Subsystem for Linux (beta)
+  * Scroll down and Select Windows Subsystem for Linux (beta)
   * Click OK
   * Restart if necessary
-3. Complete Installation
-  * Open a cmd prompt and type "bash"
+3. Install a Linux Distribution
+  * Open the Microsoft Store (Win + type 'store') 
+  * Search for Ubuntu (Orange icon) or whichever you prefer (This doc will assume Ubuntu)
+  * Install the app
+4. Complete Installation
+  * Open a cmd prompt (Win key + type 'cmd')
+  * In the command prompt window type "bash"
   * Accept the license
   * Create a new UNIX user account (this is a separate account from your Windows account)
+5. Test it
+  * Run `sudo apt update`
 
-Next actions are performed in WSL Bash application and assumes that Ubuntu provider is used.
+Next actions are performed in WSL Bash application (cmd window -> `bash`) and assumes that Ubuntu provider is used.
 
 1. Install required libraries:
     ```
     sudo apt install libcurl4-openssl-dev
     sudo apt install libboost-all-dev
+    sudo apt install g++
     ```
-2. Execute configuration and build commands:
+2. Execute configuration and build commands inside your Merit folder:
     ```
-    ./autogen.sh	# only needed if building from git repo
-    ./nomacro.pl	# in case the assembler doesn't support macros
-    ./configure
-    make
+    ./autogen.sh	# (optional) Run first only needed if you're building from a cloned git repo
+    ./nomacro.pl	# (optional) in case the assembler doesn't support macros
+    ./configure  # (required) This will prepare the build on your machine to be compiled
+    make         # (required) This will "make" the build and create the desired minerd.exe Bash application
     ```
 3. Run minerd using Bash application as described in [Usage instructions](#usage-instructions)
 
@@ -110,3 +118,7 @@ and all_proxy environment variables.
 #### Run with pool supporting stratum protocol
 
 `./minerd -o stratum+tcp://pool.merit.me:3333 -u your_merit_address_or_alias -t 2 -C 2`
+
+* The value after `-u` can simply be your public Merit Address or your Merit Alias (without the @ symbol). No ' ' or " " are needed.
+* The `-t 2 -C 2` flags set the threads for your processor. -t 6 would use six threads. You can remove `-t 2 -C 2` entirely to have it automatically use every available thread.
+* Press (Ctrl + C) a few times inside the command window to stop minerd.exe. Pressing the Up key will allow you to run previous commands or edit them.
