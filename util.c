@@ -13,6 +13,7 @@
 #define _GNU_SOURCE
 #include "cpuminer-config.h"
 
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -745,7 +746,7 @@ bool fulltest(const uint32_t *hash, const uint32_t *target)
 		char hash_str[65], target_str[65];
 
 		for (i = 0; i < 8; i++) {
-			le32enc(hash_be + i, hash[7 - i]);
+			be32enc(hash_be + i, hash[7 - i]);
 			be32enc(target_be + i, target[7 - i]);
 		}
 		bin2hex(hash_str, (unsigned char *)hash_be, 32);
@@ -768,7 +769,7 @@ void diff_to_target(uint32_t *target, double diff)
 
 	for (k = 7; k > 0 && diff > 1.0; k--)
 		diff /= 4294967296.0;
-	m = 4294901760.0 / diff;
+	m = 2147450880.0 / diff;
 
 	memset(target, 0, 32);
 	target[k] = (uint32_t)m;
