@@ -86,7 +86,7 @@ Next actions are performed in WSL Bash application (cmd window -> `bash`) and as
     ```
     sudo apt install libcurl4-openssl-dev
     sudo apt install libboost-all-dev
-    sudo apt install g++
+    sudo apt install build-essential libtool autotools-dev automake pkg-config
     ```
 2. Execute configuration and build commands inside your Merit folder:
     ```
