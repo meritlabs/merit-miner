@@ -145,7 +145,9 @@ static pthread_mutex_t stats_lock;
 
 static unsigned long accepted_count = 0L;
 static unsigned long rejected_count = 0L;
-static double *thr_cyclerates;
+static int *thr_cycles;
+static int *thr_graphs;
+static double *thr_cycletimes;
 
 // max length of hex encoded edges + commas
 #define MAX_CUCKOO_STR_LENGTH (8 + 1) * CUCKOO_CYCLE_LENGTH - 1
@@ -660,23 +662,28 @@ out:
 
 static void share_result(int result, const char *reason)
 {
-	char s[345];
+	char sc[345];
+	char sg[345];
 	double cyclerate;
+	double graphsrate;
 	int i;
 
 	cyclerate = 0.;
 	pthread_mutex_lock(&stats_lock);
-	for (i = 0; i < opt_n_threads; i++)
-		cyclerate += thr_cyclerates[i];
+	for (i = 0; i < opt_n_threads; i++) {
+		cyclerate += thr_cycletimes[i] > 0 ? thr_cycles[i] / thr_cycletimes[i] : 0;
+		graphsrate += thr_cycletimes[i] > 0 ? thr_graphs[i] / thr_cycletimes[i] : 0;
+	}
 	result ? accepted_count++ : rejected_count++;
 	pthread_mutex_unlock(&stats_lock);
 
-	sprintf(s, cyclerate >= 1e6 ? "%.0f" : "%.4f", cyclerate);
-	applog(LOG_INFO, "accepted: %lu/%lu (%.4f%%), %s cycle/s %s",
+	sprintf(sc, cyclerate >= 1e6 ? "%.0f" : "%.4f", cyclerate);
+	sprintf(sg, graphsrate >= 1e6 ? "%.0f" : "%.4f", graphsrate);
+	applog(LOG_INFO, "accepted: %lu/%lu (%.4f%%), %s cycle/s, %s graph/s %s",
 		   accepted_count,
 		   accepted_count + rejected_count,
 		   100. * accepted_count / (accepted_count + rejected_count),
-		   s,
+		   sc, sg,
 		   result ? "(yay!!!)" : "(booooo)");
 
 	if (opt_debug && reason)
@@ -747,6 +754,7 @@ static bool submit_upstream_work(CURL *curl, struct work *work)
 			params = json_dumps(val, 0);
 			json_decref(val);
 			req = malloc(128 + 2 * 81 + cycle_encoded_length + strlen(work->txs) + strlen(work->invites) + strlen(work->referrals) + strlen(params));
+
 			sprintf(req,
 				"{\"method\": \"submitblock\", \"params\": [\"%s%s%s%s\", %s], \"id\":1}\r\n",
 				data_str, work->txs, work->invites, work->referrals, params);
@@ -1131,6 +1139,7 @@ static void *miner_thread(void *userdata)
 
 	while (1) {
 		unsigned long cycles_found;
+		unsigned long nonces_checked;
 		struct timeval tv_start, tv_end, diff;
 		int64_t max64;
 		int rc;
@@ -1179,7 +1188,7 @@ static void *miner_thread(void *userdata)
 			max64 = g_work_time + (have_longpoll ? LP_SCANTIME : opt_scantime)
 			      - time(NULL);
 
-		max64 *= thr_cyclerates[thr_id];
+		max64 *= thr_graphs[thr_id] / thr_cycletimes[thr_id];
 		if (max64 <= 0) {
 			max64 = 0x1fffff;
 		}
@@ -1189,6 +1198,7 @@ static void *miner_thread(void *userdata)
 			max_nonce = work.data[19] + max64;
 
 		cycles_found = 0;
+		nonces_checked = 0;
 
 		uint32_t target_be[8];
 		char target_str[65];
@@ -1198,35 +1208,24 @@ static void *miner_thread(void *userdata)
 		}
 		bin2hex(target_str, (unsigned char *)target_be, 32);
 
+		memset(work.cycle, 0x00, sizeof(work.cycle));
+
 		/* scan nonces for a proof-of-work hash */
 		gettimeofday(&tv_start, NULL);
 
-		memset(work.cycle, 0x00, sizeof(work.cycle));
-
-		rc = scancycles(thr_id, work.data, work.target, work.cycle, max_nonce, &cycles_found, opt_n_cuckoo_threads);
+		rc = scancycles(thr_id, work.data, work.target, work.cycle, max_nonce, &cycles_found, &nonces_checked, opt_n_cuckoo_threads);
 
 		/* record scanhash elapsed time */
 		gettimeofday(&tv_end, NULL);
 		timeval_subtract(&diff, &tv_end, &tv_start);
 		if (diff.tv_usec || diff.tv_sec) {
 			pthread_mutex_lock(&stats_lock);
-			thr_cyclerates[thr_id] =
-				cycles_found / (diff.tv_sec + 1e-6 * diff.tv_usec);
+
+			thr_cycles[thr_id] += cycles_found;
+			thr_graphs[thr_id] += nonces_checked;
+			thr_cycletimes[thr_id] += diff.tv_sec + 1e-6 * diff.tv_usec;
+
 			pthread_mutex_unlock(&stats_lock);
-		}
-		if (!opt_quiet) {
-			sprintf(s, thr_cyclerates[thr_id] >= 1e6 ? "%.0f" : "%.2f", thr_cyclerates[thr_id]);
-			applog(LOG_INFO, "thread %d: %lu cycles, %s cycle/s",
-				thr_id, cycles_found, s);
-		}
-		if (opt_benchmark && thr_id == opt_n_threads - 1) {
-			double cyclerate = 0.;
-			for (i = 0; i < opt_n_threads && thr_cyclerates[i]; i++)
-				cyclerate += thr_cyclerates[i];
-			if (i == opt_n_threads) {
-				sprintf(s, cyclerate >= 1e6 ? "%.0f" : "%.4f", cyclerate);
-				applog(LOG_INFO, "Total: %s cycle/s", s);
-			}
 		}
 
 		/* if nonce found, submit work */
@@ -1894,8 +1893,10 @@ int main(int argc, char *argv[])
 	if (!thr_info)
 		return 1;
 
-	thr_cyclerates = (double *) calloc(opt_n_threads, sizeof(double));
-	if (!thr_cyclerates)
+	thr_cycles = (int *) calloc(opt_n_threads, sizeof(int));
+	thr_graphs = (int *) calloc(opt_n_threads, sizeof(int));
+	thr_cycletimes = (double *) calloc(opt_n_threads, sizeof(double));
+	if (!thr_cycles || !thr_graphs || !thr_cycletimes)
 		return 1;
 
 	/* init workio thread info */

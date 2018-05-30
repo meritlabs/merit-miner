@@ -1,10 +1,8 @@
 
-AM_CXXFLAGS = -std=c++11
-
 if DEBUG
-  AM_CXXFLAGS += -Wall -g -O3
+  AM_CXXFLAGS = -Wall -g -O3
 else
-  AM_CXXFLAGS += -Wall -O3
+  AM_CXXFLAGS = -Wall -O3
 endif
 
 noinst_LIBRARIES = libcuckoo.a

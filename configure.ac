@@ -82,7 +82,7 @@ CFLAGS="$CFLAGS -O3"
 
 AC_MSG_CHECKING(whether we can compile with native arch for AVX2 support)
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM(,[ _mm256_broadcastq_epi64(_mm_cvtsi64_si128(0xff)); ])],
-  CFLAGS="$CFLAGS -march=native"
+  CXXFLAGS="$CXXFLAGS -march=native"
   AC_MSG_RESULT(yes)
 ,
   AC_MSG_RESULT(no)
