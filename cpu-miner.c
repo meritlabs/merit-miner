@@ -669,6 +669,7 @@ static void share_result(int result, const char *reason)
 	int i;
 
 	cyclerate = 0.;
+	graphsrate = 0.;
 	pthread_mutex_lock(&stats_lock);
 	for (i = 0; i < opt_n_threads; i++) {
 		cyclerate += thr_cycletimes[i] > 0 ? thr_cycles[i] / thr_cycletimes[i] : 0;
