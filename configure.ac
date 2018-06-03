@@ -1,4 +1,4 @@
-AC_INIT([merit-miner], [0.1.0])
+AC_INIT([merit-miner], [0.2.0])
 
 AC_PREREQ([2.59c])
 AC_CANONICAL_SYSTEM
@@ -76,18 +76,20 @@ fi
 AC_ARG_ENABLE([march],
     [AS_HELP_STRING([--enable-march], [Use native CPU instructions for mining (default is no)])],
     [enable_march=$enableval],
-    [enable_march=no])
+    [enable_march=yes])
 
 CFLAGS="$CFLAGS -O3"
 
-AC_MSG_CHECKING(whether we can compile with native arch for AVX2 support)
-AC_COMPILE_IFELSE([AC_LANG_PROGRAM(,[ _mm256_broadcastq_epi64(_mm_cvtsi64_si128(0xff)); ])],
-  CXXFLAGS="$CXXFLAGS -march=native"
-  AC_MSG_RESULT(yes)
-,
-  AC_MSG_RESULT(no)
-  AC_MSG_WARN([The assembler does not support the AVX2 instruction set.])
-)
+if test x$enable_march != xno; then
+  AC_MSG_CHECKING(whether we can compile with native arch for AVX2 support)
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM(,[ _mm256_broadcastq_epi64(_mm_cvtsi64_si128(0xff)); ])],
+    CXXFLAGS="$CXXFLAGS -march=native"
+    AC_MSG_RESULT(yes)
+  ,
+    AC_MSG_RESULT(no)
+    AC_MSG_WARN([The assembler does not support the AVX2 instruction set.])
+  )
+fi
 
 if test x$enable_assembly == xyes -a x$have_x86_64 = xtrue
 then
