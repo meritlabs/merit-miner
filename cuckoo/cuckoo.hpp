@@ -1,7 +1,7 @@
 /*
  * Cuckoo Cycle, a memory-hard proof-of-work
  * Copyright (c) 2013-2017 John Tromp
- * Copyright (c) 2017-2018 The Merit Foundation developers
+ * Copyright (C) 2017-2019 The Merit Foundation
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the The FAIR MINING License and, alternatively, 
