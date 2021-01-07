@@ -1,6 +1,6 @@
 /*
  * Copyright 2012-2015 pooler@litecoinpool.org
- * Copyright (C) 2017-2020 The Merit Foundation
+ * Copyright (C) 2017-2021 The Merit Foundation
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
